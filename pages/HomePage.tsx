@@ -9,6 +9,51 @@ import { DeliveryModal, ProductDetailModal, Modal } from '../components/Modals';
 import { Product } from '../types';
 import { metaService } from '../services/meta';
 
+const PromoTimer: React.FC<{ startTime: string, endTime: string }> = ({ startTime, endTime }) => {
+  const [timeLeft, setTimeLeft] = useState<string>('');
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = new Date();
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [endH, endM] = endTime.split(':').map(Number);
+      
+      const startDate = new Date();
+      startDate.setHours(startH, startM, 0);
+      
+      const endDate = new Date();
+      endDate.setHours(endH, endM, 0);
+
+      // Se o horário de término for menor que o de início, assume que termina no dia seguinte
+      if (endDate < startDate) {
+        endDate.setDate(endDate.getDate() + 1);
+      }
+
+      if (now >= startDate && now < endDate) {
+        const diff = endDate.getTime() - now.getTime();
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      } else {
+        setTimeLeft('');
+      }
+    };
+
+    updateTimer();
+    const timer = setInterval(updateTimer, 1000);
+    return () => clearInterval(timer);
+  }, [startTime, endTime]);
+
+  if (!timeLeft) return null;
+
+  return (
+    <div className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1 shadow-sm mt-1 w-fit">
+      Termina em: {timeLeft}
+    </div>
+  );
+};
+
 const HomePage: React.FC = () => {
   const { campaignId: paramId } = useParams<{ campaignId: string }>();
   const campaignId = paramId || '1';
@@ -101,7 +146,7 @@ const HomePage: React.FC = () => {
         <div className="relative h-full"><button onClick={() => setIsMenuOpen(!isMenuOpen)} className="px-4 border-r h-full flex items-center"><Menu size={18} className="text-black" /></button>{isMenuOpen && (<><div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setIsMenuOpen(false)}/><div className="absolute top-full left-4 z-[150] mt-1 bg-white w-64 max-h-80 rounded-lg shadow-xl border border-gray-100 overflow-y-auto animate-fade-in flex flex-col p-1">{availableCategories.map(cat => (<button key={cat.id} onClick={() => scrollToCategory(cat.id)} className="w-full text-left px-4 py-3 text-[14px] font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b last:border-0 border-gray-50">{cat.name}</button>))}</div></>)}</div>
         <div className="flex-1 overflow-x-auto hide-scrollbar flex gap-5 px-4 h-full">{availableCategories.map(cat => (<button key={cat.id} onClick={() => scrollToCategory(cat.id)} className={`whitespace-nowrap py-3 text-[10px] font-bold uppercase tracking-wider relative h-full flex items-center ${activeCategory === cat.id ? 'text-black' : 'text-gray-400'}`}>{cat.name}{activeCategory === cat.id && (<div className="absolute bottom-0 left-0 w-full h-[2px] bg-black" />)}</button>))}</div>
       </div>
-      <div className="px-4 py-4 space-y-6">{availableCategories.map(cat => { const catProducts = filteredProducts.filter(p => p.categoryId === cat.id); return (<div key={cat.id} ref={(el) => { categoryRefs.current[cat.id] = el; }} className="pt-2"><h3 className="text-[13px] font-bold text-gray-800 mb-3 px-1 uppercase tracking-tight">{cat.name}</h3><div className="space-y-2">{catProducts.map(product => (<button key={product.id} onClick={() => setSelectedProduct(product)} className="w-full bg-white p-3 rounded-xl border border-gray-50 flex items-center gap-3 text-left group transition-all active:scale-[0.98]"><div className="flex-1 space-y-0.5 min-w-0"><h4 className="font-bold text-[13px] text-black group-hover:underline">{product.name}</h4>{product.description && (<p className="text-gray-400 text-[10px] font-medium line-clamp-2 leading-relaxed">{product.description.length > 60 ? product.description.substring(0, 57) + "..." : product.description}</p>)}<p className="text-[11px] font-bold text-gray-800 pt-1">{formatCurrency(product.price)}</p></div><div className="shrink-0 rounded-lg border border-gray-100 overflow-hidden w-16 h-16"><img src={product.imageUrl} className="w-full h-full object-cover" alt="" /></div></button>))}</div></div>);})}</div>
+      <div className="px-4 py-4 space-y-6">{availableCategories.map(cat => { const catProducts = filteredProducts.filter(p => p.categoryId === cat.id); return (<div key={cat.id} ref={(el) => { categoryRefs.current[cat.id] = el; }} className="pt-2"><h3 className="text-[13px] font-bold text-gray-800 mb-3 px-1 uppercase tracking-tight">{cat.name}</h3><div className="space-y-2">{catProducts.map(product => (<button key={product.id} onClick={() => setSelectedProduct(product)} className="w-full bg-white p-3 rounded-xl border border-gray-50 flex items-center gap-3 text-left group transition-all active:scale-[0.98]"><div className="flex-1 space-y-0.5 min-w-0"><h4 className="font-bold text-[13px] text-black group-hover:underline">{product.name}</h4>{product.description && (<p className="text-gray-400 text-[10px] font-medium line-clamp-2 leading-relaxed">{product.description.length > 60 ? product.description.substring(0, 57) + "..." : product.description}</p>)}<div className="flex items-center gap-2 pt-1">{(product.oldPrice && product.oldPrice > 0) && (<span className="text-[10px] text-gray-400 line-through font-medium">{formatCurrency(product.oldPrice)}</span>)}<p className="text-[11px] font-bold text-gray-800">{formatCurrency(product.price)}</p></div>{product.promoStartTime && product.promoEndTime && <PromoTimer startTime={product.promoStartTime} endTime={product.promoEndTime} />}</div><div className="shrink-0 rounded-lg border border-gray-100 overflow-hidden w-16 h-16"><img src={product.imageUrl} className="w-full h-full object-cover" alt="" /></div></button>))}</div></div>);})}</div>
 
       <DeliveryModal isOpen={isDeliveryModalOpen} onClose={() => setIsDeliveryModalOpen(false)} />
       <Modal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} title="Informações"><div className="bg-white p-4 rounded-xl border space-y-2.5 text-[11px] font-medium text-black"><p className="flex justify-between"><span className="text-gray-400">Nome:</span> <span className="font-bold">{config.name}</span></p><p className="flex justify-between flex-col gap-0.5"><span className="text-gray-400">Endereço:</span> <span className="font-bold">{config.address}</span></p><p className="flex justify-between"><span className="text-gray-400">Horário:</span> <span className="font-bold">{config.openingHours}</span></p></div></Modal>

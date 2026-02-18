@@ -73,6 +73,7 @@ export const CardRegistrationModal: React.FC<{ isOpen: boolean; onClose: () => v
     });
     setStep('list');
     setCardNumber('');
+    setCardNumber('');
     setCardExpiry('');
     setCardCvv('');
     setCardCpf('');
@@ -420,7 +421,12 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
           <div className="p-5 space-y-1 bg-white">
             <h2 className="text-xl font-bold text-black">{product.name}</h2>
             <p className="text-gray-500 text-sm leading-tight">{product.description}</p>
-            <p className="text-sm font-bold text-gray-800 pt-1">R$ {product.price.toFixed(2).replace('.', ',')}</p>
+            <div className="flex items-center gap-2 pt-1">
+                {(product.oldPrice && product.oldPrice > 0) && (
+                    <span className="text-sm text-gray-400 line-through font-medium">R$ {product.oldPrice.toFixed(2).replace('.', ',')}</span>
+                )}
+                <p className="text-sm font-bold text-gray-800">R$ {product.price.toFixed(2).replace('.', ',')}</p>
+            </div>
           </div>
 
           <div className="space-y-0">

@@ -30,6 +30,9 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  oldPrice?: number;
+  promoStartTime?: string; // Formato HH:mm
+  promoEndTime?: string;   // Formato HH:mm
   imageUrl: string;
   options?: ProductOption[];
 }
