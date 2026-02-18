@@ -18,10 +18,10 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-6">
       {/* 
         Ajustado para mobile: 
-        Se não for centralizado (ex: Sacola, Detalhes), usa h-[96vh] com rounded-t-2xl e mt-auto 
-        para garantir que as bordas arredondadas apareçam como um 'bottom sheet'.
+        Para os popups de sacola e produtos (não centrados), agora usa h-full 
+        para ocupar a tela inteira, mantendo o arredondamento sutil no topo (rounded-t-2xl).
       */}
-      <div className={`bg-white w-full flex flex-col animate-fade-in shadow-2xl overflow-hidden ${centered ? 'max-w-md h-auto rounded-2xl mx-4 mb-auto sm:mb-0' : 'h-[96vh] mt-auto rounded-t-2xl sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl'}`}>
+      <div className={`bg-white w-full flex flex-col animate-fade-in shadow-2xl overflow-hidden ${centered ? 'max-w-md h-auto rounded-2xl mx-4 mb-auto sm:mb-0' : 'h-full rounded-t-2xl sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl'}`}>
         <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-white z-10 shrink-0">
           <h3 className="font-bold text-lg text-black">{title}</h3>
           <button onClick={onClose} className="p-1.5 bg-gray-100 rounded-full text-black hover:bg-gray-200 transition-colors">

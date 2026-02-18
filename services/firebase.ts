@@ -1,4 +1,5 @@
-// Ensure initializeApp is imported correctly from the modular Firebase SDK
+
+// Fix: Importing initializeApp correctly from the modular Firebase SDK
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
