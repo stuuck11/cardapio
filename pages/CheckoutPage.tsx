@@ -24,7 +24,7 @@ const CheckoutPage: React.FC = () => {
   
   const [authStep, setAuthStep] = useState<'selection' | 'id' | 'address'>(user?.phone ? 'selection' : 'id');
   const [tempPhone, setTempPhone] = useState(user?.phone || '');
-  const [addrForm, setAddrForm] = useState<Partial<Address>>(user?.address || { type: 'delivery' });
+  const [addrForm, setAddrForm] = useState<Partial<Address>>(user?.address || { type: 'delivery', zipCode: '' });
 
   const [showAddCard, setShowAddCard] = useState(false);
   const [cardNumber, setCardNumber] = useState('');
@@ -110,6 +110,10 @@ const CheckoutPage: React.FC = () => {
     return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{4})\d+?$/, '$1');
   };
 
+  const maskCep = (value: string) => {
+    return value.replace(/\D/g, "").replace(/^(\d{5})(\d)/, "$1-$2").substring(0, 9);
+  };
+
   const maskCardNumber = (v: string) => {
     v = v.replace(/\D/g, "");
     if (v.length > 16) v = v.substring(0, 16);
@@ -135,32 +139,36 @@ const CheckoutPage: React.FC = () => {
   };
 
   const handleAddressSubmit = () => {
-    if (addrForm.city && addrForm.neighborhood && addrForm.street && addrForm.number) {
+    if (addrForm.city && addrForm.neighborhood && addrForm.street && addrForm.number && addrForm.zipCode) {
       setAddress(addrForm as Address);
       setError('');
     } else {
-      setError('Preencha todos os campos do endereço.');
+      setError('Preencha todos os campos do endereço (incluindo o CEP).');
     }
   };
 
-  const handleSaveCardAndPay = (e: React.FormEvent) => {
+  const handleSaveCardAndPay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cardNumber.length < 19 || cardExpiry.length < 5 || cardCvv.length < 3 || !cardHolder) {
         setError("Por favor, preencha todos os dados do cartão corretamente.");
         return;
     }
     setError('');
-    addCard({
+    const newCardData = {
         number: cardNumber.replace(/\s/g, ''),
         name: cardHolder,
         expiry: cardExpiry,
         cvv: cardCvv,
-    });
+    };
+    await addCard(newCardData);
     setShowAddCard(false);
+    
+    // Inicia o processo de pagamento imediatamente com o novo cartão
+    confirmPaymentReal(newCardData);
   };
 
   // Lógica REAL de pagamento integrada
-  const confirmPaymentReal = async () => {
+  const confirmPaymentReal = async (manualCard?: any) => {
     setIsProcessing(true);
     setError('');
     setPixData(null);
@@ -186,10 +194,11 @@ const CheckoutPage: React.FC = () => {
       };
 
       if (method === 'card') {
-        const lastCard = cards[cards.length - 1];
+        const lastCard = manualCard || cards[cards.length - 1];
         if (!lastCard) {
             setShowAddCard(true);
-            throw new Error("Cadastre um cartão primeiro.");
+            setIsProcessing(false);
+            return;
         }
         
         paymentData.creditCard = {
@@ -203,7 +212,7 @@ const CheckoutPage: React.FC = () => {
           name: name,
           email: `${tempPhone.replace(/\D/g, '')}@japabox.com.br`,
           cpfCnpj: cpf.replace(/\D/g, ''),
-          postalCode: '14700000',
+          postalCode: addrForm.zipCode?.replace(/\D/g, '') || '14700000',
           addressNumber: addrForm.number || 'SN',
           phone: tempPhone.replace(/\D/g, '')
         };
@@ -306,7 +315,7 @@ const CheckoutPage: React.FC = () => {
                 <div className="bg-blue-100 p-4 rounded-full text-blue-600"><Bike size={28} /></div>
                 <div><p className="font-bold text-lg">Delivery</p><p className="text-sm text-gray-500 font-medium">Receba no seu endereço</p></div>
               </button>
-              <button onClick={() => { setAddress({ type: 'pickup', city: 'Local', neighborhood: 'Loja', street: config.address, number: '' } as Address); setError(''); }} className="w-full flex items-center p-5 border border-gray-100 rounded-2xl gap-4 text-left hover:bg-gray-50 transition-colors shadow-sm">
+              <button onClick={() => { setAddress({ type: 'pickup', city: 'Local', neighborhood: 'Loja', street: config.address, number: '', zipCode: '14700000' } as Address); setError(''); }} className="w-full flex items-center p-5 border border-gray-100 rounded-2xl gap-4 text-left hover:bg-gray-50 transition-colors shadow-sm">
                 <div className="bg-gray-100 p-4 rounded-full text-gray-600"><Store size={28} /></div>
                 <div><p className="font-bold text-lg">Retirada na loja</p><p className="text-sm text-gray-500 font-medium">Retire no local</p></div>
               </button>
@@ -316,6 +325,7 @@ const CheckoutPage: React.FC = () => {
           {authStep === 'address' && (
             <div className="space-y-4">
               <div className="space-y-3">
+                <input placeholder="CEP" className="w-full p-4 border rounded-xl bg-white text-black outline-none focus:border-black transition-all" value={addrForm.zipCode || ''} onChange={(e) => setAddrForm({...addrForm, zipCode: maskCep(e.target.value)})} />
                 <select className="w-full p-4 border rounded-xl bg-white text-black" value={addrForm.city || ''} onChange={(e) => setAddrForm({...addrForm, city: e.target.value})}>
                   <option value="">Selecione sua cidade</option>
                   <option value="Bebedouro">Bebedouro</option>
@@ -443,7 +453,7 @@ const CheckoutPage: React.FC = () => {
                               <input placeholder="Validade (MM/AA)" className="flex-1 p-3.5 border rounded-xl bg-white text-black text-sm outline-none focus:border-black transition-all" value={cardExpiry} onChange={e => setCardExpiry(maskExpiry(e.target.value))} />
                               <input placeholder="CVV" maxLength={3} className="w-20 p-3.5 border rounded-xl bg-white text-black text-sm outline-none focus:border-black transition-all" value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, ""))} />
                           </div>
-                          <button onClick={handleSaveCardAndPay} className="w-full py-3 bg-black text-white rounded-xl font-bold text-sm">Salvar Cartão</button>
+                          <button onClick={handleSaveCardAndPay} className="w-full py-3 bg-black text-white rounded-xl font-bold text-sm">Salvar Cartão e Pagar</button>
                           <button onClick={() => { setShowAddCard(false); setError(''); }} className="w-full py-2 text-gray-400 font-bold text-xs">Cancelar</button>
                       </div>
                   </div>

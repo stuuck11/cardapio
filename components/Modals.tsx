@@ -51,10 +51,10 @@ export const CardRegistrationModal: React.FC<{ isOpen: boolean; onClose: () => v
     return v;
   };
 
-  const handleAddCard = (e: React.FormEvent) => {
+  const handleAddCard = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
-    addCard({
+    await addCard({
       number: cardNumber.replace(/\s/g, ''),
       name: formData.get('name') as string,
       expiry: cardExpiry,
@@ -164,10 +164,14 @@ export const DeliveryModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [error, setError] = useState('');
-  const [addrForm, setAddrForm] = useState<Partial<Address>>(user?.address || { type: 'delivery' });
+  const [addrForm, setAddrForm] = useState<Partial<Address>>(user?.address || { type: 'delivery', zipCode: '' });
 
   const maskPhone = (value: string) => {
     return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{4})\d+?$/, '$1');
+  };
+
+  const maskCep = (value: string) => {
+    return value.replace(/\D/g, "").replace(/^(\d{5})(\d)/, "$1-$2").substring(0, 9);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,12 +189,12 @@ export const DeliveryModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
   };
 
   const handleFinishAddress = () => {
-    if (addrForm.city && addrForm.neighborhood && addrForm.street && addrForm.number) {
+    if (addrForm.city && addrForm.neighborhood && addrForm.street && addrForm.number && addrForm.zipCode) {
       setAddress(addrForm as Address);
       setError('');
       onClose();
     } else {
-      setError('Por favor, preencha todos os campos obrigatórios do endereço.');
+      setError('Por favor, preencha todos os campos obrigatórios do endereço (incluindo o CEP).');
     }
   };
 
@@ -201,8 +205,15 @@ export const DeliveryModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
       neighborhood: 'Loja',
       street: config.address,
       number: '',
+      zipCode: '14700000'
     } as Address);
     onClose();
+  };
+
+  const handleDeleteAddress = () => {
+    setAddress(undefined);
+    setAddrForm({ type: 'delivery', zipCode: '' });
+    setStep('selection');
   };
 
   return (
@@ -260,7 +271,7 @@ export const DeliveryModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                     <p className="text-lg font-bold">{user.address.street}, {user.address.number}</p>
                     <p className="text-sm text-gray-500 font-medium">{user.address.neighborhood} - {user.address.city}</p>
                   </div>
-                  <button className="text-red-500 p-3 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={24} /></button>
+                  <button onClick={handleDeleteAddress} className="text-red-500 p-3 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={24} /></button>
                 </div>
                 <button onClick={() => setStep('id')} className="w-full mt-6 py-4 border-2 border-black rounded-2xl font-bold text-black hover:bg-gray-50 transition-all">Adicionar novo endereço</button>
               </div>
@@ -271,6 +282,7 @@ export const DeliveryModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
           <div className="space-y-6 text-black h-full flex flex-col">
             <p className="font-bold text-2xl mb-4">Dados de Entrega</p>
             <div className="space-y-4 flex-1">
+              <input placeholder="CEP" className="w-full p-5 border-2 rounded-2xl text-lg font-bold text-black bg-white focus:border-black outline-none transition-all" value={addrForm.zipCode || ''} onChange={(e) => setAddrForm({...addrForm, zipCode: maskCep(e.target.value)})} />
               <select className="w-full p-5 border-2 rounded-2xl text-lg font-bold text-black bg-white focus:border-black outline-none transition-all appearance-none" value={addrForm.city || ''} onChange={(e) => setAddrForm({...addrForm, city: e.target.value})}>
                 <option value="">Selecione sua cidade</option>
                 <option value="Bebedouro">Bebedouro</option>

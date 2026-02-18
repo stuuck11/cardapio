@@ -82,6 +82,7 @@ export interface Address {
   street: string;
   number: string;
   complement?: string;
+  zipCode: string;
   type: 'delivery' | 'pickup';
 }
 

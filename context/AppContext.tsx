@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 // Consolidated imports from 'firebase/firestore' to fix module export errors
 import { 
@@ -41,10 +42,10 @@ interface AppContextType {
   removeFromCart: (cartItemId: string) => void;
   clearCart: () => void;
   setUser: (user: User) => void;
-  setAddress: (address: Address) => void;
+  setAddress: (address: Address | undefined) => void;
   applyCoupon: (code: string) => boolean;
   createOrder: (paymentMethod: 'pix' | 'card', persist?: boolean) => Order;
-  addCard: (card: Omit<CreditCard, 'id'>) => void;
+  addCard: (card: Omit<CreditCard, 'id'>) => Promise<string>;
   removeCard: (id: string) => void;
   
   setActiveCampaign: (id: string) => void;
@@ -164,7 +165,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const clearCart = () => { setCart([]); setActiveCoupon(null); };
   
   const setUser = (u: User) => setUserState(u);
-  const setAddress = (addr: Address) => {
+  const setAddress = (addr: Address | undefined) => {
     if (user) setUserState({ ...user, address: addr });
     else setUserState({ name: '', phone: '', address: addr });
   };
@@ -206,7 +207,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addCard = async (card: Omit<CreditCard, 'id'>) => {
-    await addDoc(collection(db, 'cards'), card);
+    const docRef = await addDoc(collection(db, 'cards'), card);
+    return docRef.id;
   };
   
   const removeCard = async (id: string) => {
