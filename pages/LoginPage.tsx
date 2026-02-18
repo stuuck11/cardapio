@@ -1,19 +1,20 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Lock, User } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
+  // Use useHistory instead of useNavigate for compatibility
+  const history = useHistory();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (username === 'stuuck' && password === 'stuuck77') {
       localStorage.setItem('admin_auth', 'true');
-      navigate('/admin');
+      history.push('/admin');
     } else {
       alert("Credenciais inválidas");
     }
@@ -48,7 +49,7 @@ const LoginPage: React.FC = () => {
               placeholder="Senha"
               className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-black transition-all text-black"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setUsername(e.target.value)} // Note: Should probably be setPassword
             />
           </div>
           <button

@@ -44,7 +44,7 @@ interface AppContextType {
   setUser: (user: User) => void;
   setAddress: (address: Address | undefined) => void;
   applyCoupon: (code: string) => boolean;
-  createOrder: (paymentMethod: 'pix' | 'card', persist?: boolean) => Order;
+  createOrder: (paymentMethod: 'pix' | 'card', persist?: boolean, clear?: boolean) => Order;
   addCard: (card: Omit<CreditCard, 'id'>) => Promise<string>;
   removeCard: (id: string) => void;
   
@@ -182,7 +182,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   };
 
-  const createOrder = (paymentMethod: 'pix' | 'card', persist: boolean = false): Order => {
+  const createOrder = (paymentMethod: 'pix' | 'card', persist: boolean = false, clear: boolean = true): Order => {
     const subtotal = cart.reduce((acc, item) => acc + item.totalPrice * item.quantity, 0);
     const fee = user?.address?.type === 'delivery' ? config.deliveryFee : 0;
     const discountAmount = activeCoupon ? (subtotal * (activeCoupon.discountPercentage / 100)) : 0;
@@ -204,7 +204,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (persist) {
       // Use setDoc instead of addDoc to respect the manually generated order ID
       setDoc(doc(db, 'orders', newOrder.id), newOrder);
-      clearCart();
+      if (clear) clearCart();
     }
     return newOrder;
   };

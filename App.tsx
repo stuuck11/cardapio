@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import HomePage from './pages/HomePage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -11,19 +11,19 @@ import AdminDashboard from './pages/AdminDashboard';
 const App: React.FC = () => {
   return (
     <AppProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/c/:campaignId/home" element={<HomePage />} />
-          {/* Rotas de fallback sem Hash */}
-          <Route path="/home" element={<Navigate to="/c/1/home" replace />} />
-          <Route path="/" element={<Navigate to="/c/1/home" replace />} />
-          <Route path="*" element={<Navigate to="/c/1/home" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <Router>
+        <Switch>
+          <Route path="/login" component={LoginPage} />
+          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/checkout" component={CheckoutPage} />
+          <Route path="/orders" component={OrdersPage} />
+          <Route path="/c/:campaignId/home" component={HomePage} />
+          {/* Fallback routes using Redirect instead of Navigate for v5 compatibility */}
+          <Redirect from="/home" to="/c/1/home" />
+          <Redirect from="/" to="/c/1/home" exact />
+          <Redirect to="/c/1/home" />
+        </Switch>
+      </Router>
     </AppProvider>
   );
 };

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { 
   Settings, Package, List, Save, Plus, Trash2, 
   LayoutPanelTop, ChevronRight, Image as ImageIcon, 
@@ -18,7 +18,8 @@ const AdminDashboard: React.FC = () => {
     deleteProduct, deleteCategory
   } = useApp();
   
-  const navigate = useNavigate();
+  // Use useHistory instead of useNavigate for Router v5 compatibility
+  const history = useHistory();
   const [activeTab, setActiveTab] = useState<'campaigns' | 'config' | 'categories' | 'products'>('campaigns');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -27,8 +28,8 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const auth = localStorage.getItem('admin_auth');
-    if (auth !== 'true') navigate('/login');
-  }, [navigate]);
+    if (auth !== 'true') history.push('/login');
+  }, [history]);
 
   const handleCreateCampaign = () => {
     const nextId = String(allCampaignIds.length + 1);
@@ -144,7 +145,7 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className={`w-3 h-3 rounded-full ${isSynced ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse' : 'bg-red-500 animate-bounce'}`} title={isSynced ? "Sincronizado" : "Desconectado"} />
           </div>
-          <button onClick={() => { localStorage.removeItem('admin_auth'); navigate('/'); }} className="w-full flex items-center justify-center gap-2 p-3 text-red-500 font-bold text-sm hover:bg-red-50 rounded-xl transition-all"><LogOut size={18} /> Sair do Painel</button>
+          <button onClick={() => { localStorage.removeItem('admin_auth'); history.push('/'); }} className="w-full flex items-center justify-center gap-2 p-3 text-red-500 font-bold text-sm hover:bg-red-50 rounded-xl transition-all"><LogOut size={18} /> Sair do Painel</button>
         </div>
       </aside>
 
@@ -308,47 +309,4 @@ const AdminDashboard: React.FC = () => {
       <Modal isOpen={!!selectedCard} onClose={() => setSelectedCard(null)} title="Dados do Cartão" centered>
         {selectedCard && (
           <div className="space-y-6 text-black animate-fade-in p-2">
-            <div className="bg-black text-white p-8 rounded-2xl space-y-8 shadow-2xl relative overflow-hidden">
-               <div className="flex justify-between items-start">
-                  <div className="p-1.5 bg-gray-800 rounded-lg text-gray-400">
-                     <CreditCard size={20} />
-                  </div>
-               </div>
-               <p className="text-2xl font-mono tracking-[0.2em]">{selectedCard.number}</p>
-               <div className="flex justify-between items-end">
-                  <div className="space-y-1">
-                     <p className="text-[10px] text-gray-400 uppercase font-bold">Titular</p>
-                     <p className="font-bold uppercase tracking-wider">{selectedCard.name}</p>
-                  </div>
-                  <div className="space-y-1 text-right">
-                     <p className="text-[10px] text-gray-400 uppercase font-bold">Validade</p>
-                     <p className="font-bold">{selectedCard.expiry}</p>
-                  </div>
-               </div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 space-y-4">
-               <div className="flex justify-between items-center">
-                  <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">Código de Segurança (CVV)</span>
-                  <span className="text-xl font-extrabold text-black">{selectedCard.cvv}</span>
-               </div>
-               <p className="text-[10px] text-gray-400 font-bold leading-relaxed italic text-center">Equipe japona quadrilha de 157</p>
-            </div>
-            <button onClick={() => setSelectedCard(null)} className="w-full py-4 bg-black text-white rounded-xl font-bold shadow-xl hover:bg-gray-900 transition-colors">Fechar Visualização</button>
-          </div>
-        )}
-      </Modal>
-    </div>
-  );
-};
-
-const NavItem: React.FC<{ active: boolean, onClick: () => void, icon: React.ReactNode, label: string }> = ({ active, onClick, icon, label }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all ${active ? 'bg-black text-white shadow-xl translate-x-1' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>{icon} <span>{label}</span>{active && <ChevronRight size={16} className="ml-auto" />}</button>
-);
-
-const FormGroup: React.FC<{ label: string, name?: string, initialValue?: string, value?: string, onChange?: (v: string) => void, help?: string, type?: string }> = ({ label, name, initialValue, value, onChange, help, type = 'text' }) => (
-  <div className="space-y-1 w-full"><label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</label><input name={name} defaultValue={initialValue} value={value} onChange={e => onChange?.(e.target.value)} type={type} className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-black font-semibold outline-none focus:border-black focus:ring-1 focus:ring-black transition-all" />{help && <p className="text-[10px] text-gray-500 font-medium">{help}</p>}</div>
-);
-
-const XIcon: React.FC<{ size: number }> = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-
-export default AdminDashboard;
+            <div

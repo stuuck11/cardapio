@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
 import { Search, Info, MapPin, Bike, ShoppingBag, ChevronRight, Menu, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Layout from '../components/Layout';
@@ -9,9 +9,11 @@ import { Product } from '../types';
 import { metaService } from '../services/meta';
 
 const HomePage: React.FC = () => {
+  // useParams, useHistory, and useLocation are available in v5.1+
   const { campaignId: paramId } = useParams<{ campaignId: string }>();
   const campaignId = paramId || '1';
   const location = useLocation();
+  const history = useHistory();
   const { config, categories, products, user, setActiveCampaign, formatCurrency, isStoreOpen } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
@@ -21,7 +23,6 @@ const HomePage: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOpenNow, setIsOpenNow] = useState(isStoreOpen());
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const navigate = useNavigate();
 
   useEffect(() => {
     setActiveCampaign(campaignId);
@@ -54,7 +55,8 @@ const HomePage: React.FC = () => {
     if (element) {
       const offset = 110;
       const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
+      // Using window.scrollY instead of pageYOffset for modern compatibility
+      const offsetPosition = elementPosition + (window.scrollY || window.pageYOffset) - offset;
       window.scrollTo({ top: offsetPosition, behavior: "smooth" });
     }
   };

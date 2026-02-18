@@ -3,15 +3,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, QrCode, CreditCard, CheckCircle2, MapPin, Smartphone, X, AlertCircle, Plus, Bike, Store } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Layout from '../components/Layout';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { Modal } from '../components/Modals';
 import { Address } from '../types';
 import { asaasService } from '../services/asaas';
 import { metaService } from '../services/meta';
 
 const CheckoutPage: React.FC = () => {
-  const { cart, config, user, setUser, setAddress, createOrder, activeCoupon, formatCurrency, activeCampaignId, products, cards, addCard } = useApp();
-  const navigate = useNavigate();
+  const { cart, config, user, setUser, setAddress, createOrder, clearCart, activeCoupon, formatCurrency, activeCampaignId, products, cards, addCard } = useApp();
+  // Using useHistory instead of useNavigate for Router v5 compatibility
+  const history = useHistory();
   const [method, setMethod] = useState<'pix' | 'card'>('pix');
   const [cpf, setCpf] = useState('');
   const [name, setName] = useState(user?.name || '');
@@ -85,8 +86,9 @@ const CheckoutPage: React.FC = () => {
                 phone: tempPhone
               });
             }
+            clearCart();
             setShowSuccess(true);
-            setTimeout(() => navigate('/orders'), 2000);
+            setTimeout(() => history.push('/orders'), 2000);
             clearInterval(interval);
           }
         } catch (e) {
@@ -95,7 +97,7 @@ const CheckoutPage: React.FC = () => {
       }, 5000); // Verifica a cada 5 segundos
     }
     return () => clearInterval(interval);
-  }, [currentPaymentId, showSuccess, config.metaPixelId, currentTotal, navigate, tempPhone, config.name, config.metaCapiToken]);
+  }, [currentPaymentId, showSuccess, config.metaPixelId, currentTotal, history, tempPhone, config.name, config.metaCapiToken, clearCart]);
 
   const maskCpf = (v: string) => {
     v = v.replace(/\D/g, "");
@@ -237,19 +239,19 @@ const CheckoutPage: React.FC = () => {
             phone: tempPhone
           });
         }
-        createOrder(method, true);
+        createOrder(method, true, true);
         setShowSuccess(true);
-        setTimeout(() => navigate('/orders'), 2000);
+        setTimeout(() => history.push('/orders'), 2000);
       } else if (method === 'pix') {
         const qrCode = await asaasService.getPixQrCode(payment.id);
         setPixData({ encodedImage: qrCode.encodedImage, payload: qrCode.payload });
-        createOrder(method, true);
+        // Cria o pedido como pendente mas NÃO limpa o carrinho ainda para manter o total visível
+        createOrder(method, true, false);
         setIsProcessing(false);
       } else {
-        // Se for cartão mas não aprovado imediatamente (ex: em análise), ainda processa a ordem
-        createOrder(method, true);
+        // Se for cartão mas não aprovado imediatamente (ex: em análise), processa a ordem e limpa
+        createOrder(method, true, true);
         setIsProcessing(false);
-        // Polling iniciado pelo useEffect cuidará do Purchase se virar CONFIRMED
       }
     } catch (err: any) {
       console.error('[Checkout Debug] Erro:', err);

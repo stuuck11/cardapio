@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { Home, ClipboardList, User, ChevronLeft, X, CreditCard, LogOut, ShieldCheck, ShoppingBag, ChevronRight, CloudOff, CloudCheck } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CardRegistrationModal, Modal } from './Modals';
@@ -12,7 +12,8 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
-  const navigate = useNavigate();
+  // Use useHistory instead of useNavigate for compatibility
+  const history = useHistory();
   const location = useLocation();
   const { user, activeCampaignId, cart, formatCurrency, config, clearCart, removeFromCart, isSynced } = useApp();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -29,7 +30,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
     if (path === '#profile') {
       setIsProfileOpen(true);
     } else {
-      navigate(path);
+      history.push(path);
     }
   };
 
@@ -43,7 +44,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
     <div className="min-h-screen max-w-md mx-auto bg-white shadow-lg relative overflow-x-hidden flex flex-col">
       {/* Botão Admin Sandbox */}
       <button 
-        onClick={() => navigate('/login')}
+        onClick={() => history.push('/login')}
         className="fixed bottom-32 right-4 z-[99] bg-gray-800 text-white/50 p-2.5 rounded-full shadow-lg hover:text-white transition-colors"
         title="Admin"
       >
@@ -54,7 +55,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
         <header className="sticky top-0 z-[55] bg-white border-b px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {showBack && (
-              <button onClick={() => navigate(-1)} className="p-1 text-black">
+              <button onClick={() => history.goBack()} className="p-1 text-black">
                 <ChevronLeft size={20} />
               </button>
             )}
@@ -213,7 +214,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
               </div>
             </div>
             <button 
-              onClick={() => { setIsCartOpen(false); navigate('/checkout'); }} 
+              onClick={() => { setIsCartOpen(false); history.push('/checkout'); }} 
               className="w-[88%] mx-auto py-3.5 bg-black text-white rounded-xl font-bold text-[13px] flex justify-between px-6 shadow-xl active:scale-[0.98] transition-all"
             >
               <span>Continuar</span>
