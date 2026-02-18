@@ -52,6 +52,9 @@ interface AppContextType {
   addCampaign: (id: string) => void;
   updateCampaignData: (id: string, data: Partial<CampaignData>) => void;
   isStoreOpen: () => boolean;
+
+  deleteProduct: (id: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -251,12 +254,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const deleteProduct = async (id: string) => {
+    await deleteDoc(doc(db, `campaigns/${activeCampaignId}/products`, id));
+  };
+
+  const deleteCategory = async (id: string) => {
+    await deleteDoc(doc(db, `campaigns/${activeCampaignId}/categories`, id));
+    // Deletar produtos vinculados
+    const prodsToDelete = products.filter(p => p.categoryId === id);
+    for (const p of prodsToDelete) {
+      await deleteDoc(doc(db, `campaigns/${activeCampaignId}/products`, p.id));
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       activeCampaignId, config, categories, products, coupons: INITIAL_COUPONS, cart, user, orders, cards, activeCoupon,
       allCampaignIds, isSynced,
       formatCurrency, addToCart, removeFromCart, clearCart, setUser, setAddress, applyCoupon, createOrder, addCard, removeCard,
-      setActiveCampaign, addCampaign, updateCampaignData, isStoreOpen
+      setActiveCampaign, addCampaign, updateCampaignData, isStoreOpen, deleteProduct, deleteCategory
     }}>
       {children}
     </AppContext.Provider>

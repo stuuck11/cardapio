@@ -13,7 +13,8 @@ import { Modal } from '../components/Modals';
 const AdminDashboard: React.FC = () => {
   const { 
     activeCampaignId, config, categories, products, allCampaignIds, cards, orders, isSynced,
-    updateCampaignData, setActiveCampaign, addCampaign, formatCurrency, removeCard 
+    updateCampaignData, setActiveCampaign, addCampaign, formatCurrency, removeCard,
+    deleteProduct, deleteCategory
   } = useApp();
   
   const navigate = useNavigate();
@@ -91,15 +92,13 @@ const AdminDashboard: React.FC = () => {
 
   const removeCategory = (id: string) => {
     if (confirm("Deseja excluir esta categoria e todos os seus produtos?")) {
-      const newCats = categories.filter(c => c.id !== id);
-      const newProds = products.filter(p => p.categoryId !== id);
-      updateCampaignData(activeCampaignId, { categories: newCats, products: newProds });
+      deleteCategory(id);
     }
   };
 
   const removeProduct = (id: string) => {
     if(confirm("Deseja realmente excluir este produto?")) {
-      updateCampaignData(activeCampaignId, { products: products.filter(x => x.id !== id) });
+      deleteProduct(id);
     }
   };
 
