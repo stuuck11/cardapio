@@ -21,12 +21,10 @@ const CheckoutPage: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [pixData, setPixData] = useState<{ encodedImage: string, payload: string } | null>(null);
   
-  // Estados para identificação inline no checkout
   const [authStep, setAuthStep] = useState<'selection' | 'id' | 'address'>(user?.phone ? 'selection' : 'id');
   const [tempPhone, setTempPhone] = useState(user?.phone || '');
   const [addrForm, setAddrForm] = useState<Partial<Address>>(user?.address || { type: 'delivery' });
 
-  // Estados para novo cartão no checkout
   const [showAddCard, setShowAddCard] = useState(false);
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -43,7 +41,7 @@ const CheckoutPage: React.FC = () => {
   const upsellPrice = dailySuggestion?.price || 12.90;
   const deliveryFee = user?.address?.type === 'pickup' ? 0 : config.deliveryFee;
   const discount = activeCoupon ? (subtotal * (activeCoupon.discountPercentage / 100)) : 0;
-  const currentTotal = subtotal + deliveryFee + (upsellSelected ? upsellPrice : 0) - discount;
+  const currentTotal = parseFloat((subtotal + deliveryFee + (upsellSelected ? upsellPrice : 0) - discount).toFixed(2));
 
   const maskCpf = (v: string) => {
     v = v.replace(/\D/g, "");
@@ -123,29 +121,29 @@ const CheckoutPage: React.FC = () => {
   const confirmPaymentReal = async () => {
     setIsProcessing(true);
     setError('');
-    console.log('[Checkout Debug] Iniciando confirmPaymentReal...');
+    console.log('[Checkout Debug] Iniciando fluxo de pagamento Asaas...');
     
     try {
-      // 1. Criar/Pegar cliente no Asaas
+      // 1. Criar/Pegar cliente no Asaas (Email é importante no Asaas)
       const customer = await asaasService.createCustomer({
         name: name,
         cpfCnpj: cpf.replace(/\D/g, ''),
-        phone: tempPhone.replace(/\D/g, '')
+        phone: tempPhone.replace(/\D/g, ''),
+        email: `${tempPhone.replace(/\D/g, '')}@japabox.com.br`
       });
 
       if (!customer || customer.errors) {
-        const msg = customer?.errors?.[0]?.description || 'Erro desconhecido ao criar cliente';
-        throw new Error(msg);
+        throw new Error(customer?.errors?.[0]?.description || 'Falha ao processar dados do cliente.');
       }
 
-      // 2. Gerar Pagamento
+      // 2. Preparar Dados do Pagamento
       const paymentData: any = {
         customer: customer.id,
         billingType: method === 'pix' ? 'PIX' : 'CREDIT_CARD',
         value: currentTotal,
         dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
         description: `Pedido Japan Box Express - ${name}`,
-        externalReference: Math.random().toString(36).substr(2, 9)
+        externalReference: `order_${Math.floor(Date.now() / 1000)}`
       };
 
       if (method === 'card') {
@@ -161,9 +159,9 @@ const CheckoutPage: React.FC = () => {
         };
         paymentData.creditCardHolderInfo = {
           name: name,
-          email: `${tempPhone.replace(/\D/g, '')}@noemail.com`,
+          email: `${tempPhone.replace(/\D/g, '')}@japabox.com.br`,
           cpfCnpj: cpf.replace(/\D/g, ''),
-          postalCode: '00000000',
+          postalCode: '14700000', // CEP padrão da região se não houver
           addressNumber: addrForm.number || 'SN',
           phone: tempPhone.replace(/\D/g, '')
         };
@@ -171,28 +169,29 @@ const CheckoutPage: React.FC = () => {
 
       const payment = await asaasService.createPayment(paymentData);
       if (!payment || payment.errors) {
-        const msg = payment?.errors?.[0]?.description || 'Erro desconhecido ao criar pagamento';
-        throw new Error(msg);
+        throw new Error(payment?.errors?.[0]?.description || 'Erro ao gerar cobrança.');
       }
 
-      // 3. Se for PIX, buscar QR Code
+      // 3. Gerenciar Resposta por Método
       if (method === 'pix') {
         const qrCode = await asaasService.getPixQrCode(payment.id);
-        if (!qrCode || qrCode.errors) {
-            throw new Error('Falha ao gerar QR Code PIX.');
+        if (!qrCode || !qrCode.encodedImage) {
+            throw new Error('O Asaas não retornou o QR Code PIX.');
         }
         setPixData({ encodedImage: qrCode.encodedImage, payload: qrCode.payload });
+        // Registrar pedido como 'pendente' no Firestore
+        createOrder(method, true);
       } else {
-        // Sucesso no cartão
+        // Sucesso no cartão (Asaas processa na hora em sandbox se os dados forem válidos)
         createOrder(method, true);
         setShowSuccess(true);
         setTimeout(() => navigate('/orders'), 2000);
       }
     } catch (err: any) {
-      console.error('[Checkout Debug] Erro capturado:', err);
-      let errorMsg = err.message || 'Erro ao processar pagamento.';
-      if (errorMsg === 'Failed to fetch') {
-        errorMsg = 'Erro de conexão com o Asaas (Possível erro de CORS). Tente novamente ou use outro navegador.';
+      console.error('[Checkout Debug] Erro durante o pagamento:', err);
+      let errorMsg = err.message || 'Erro inesperado na transação.';
+      if (errorMsg.includes('Failed to fetch')) {
+        errorMsg = 'Falha de rede ao conectar com o Asaas. Verifique seu firewall ou se o ASAAS_API_KEY está correto.';
       }
       setError(errorMsg);
     } finally {
@@ -206,8 +205,8 @@ const CheckoutPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center space-y-6">
         <CheckCircle2 size={64} className="text-green-500 animate-bounce" />
-        <h2 className="text-2xl font-bold text-black">Processando Pedido...</h2>
-        <p className="text-gray-500 text-sm">Verificando status junto ao banco emissor.</p>
+        <h2 className="text-2xl font-bold text-black">Pedido Confirmado!</h2>
+        <p className="text-gray-500 text-sm">Seu pagamento foi processado com sucesso.</p>
       </div>
     );
   }
