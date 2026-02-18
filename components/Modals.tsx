@@ -399,7 +399,7 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
                 <div key={opt.id} className="border-b last:border-0">
                   {/* Cabeçalho do Grupo (Cinza conforme print) */}
                   <div className="bg-[#f0f2f5] px-5 py-4 flex justify-between items-center border-y border-gray-100 mt-2">
-                    <div className="space-y-0.5">
+                    <div className="space-y-0">
                       <h4 className="font-bold text-gray-800 text-[13px]">{opt.title}</h4>
                       <p className="text-[11px] text-gray-500 font-medium">{opt.subtitle}</p>
                     </div>
@@ -419,10 +419,10 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
                       const count = selectedGroup[item.id] || 0;
                       return (
                         <div key={item.id} className="flex justify-between items-center p-5 group transition-colors hover:bg-gray-50/50">
-                          <div className="flex-1 space-y-1">
+                          <div className="flex-1 space-y-0">
                             <p className="text-[13px] font-bold text-black">{item.name}</p>
                             {item.description && <p className="text-[11px] text-gray-400 font-medium">{item.description}</p>}
-                            <p className="text-[12px] font-bold text-gray-500">+ R$ {item.price.toFixed(2).replace('.', ',')}</p>
+                            <p className="text-[12px] font-bold text-gray-500 pt-0.5">+ R$ {item.price.toFixed(2).replace('.', ',')}</p>
                           </div>
                           
                           <div className="flex items-center gap-4 ml-4">
