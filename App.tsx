@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { HashRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
+/* Updated react-router-dom imports for v6 compatibility */
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import HomePage from './pages/HomePage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -12,17 +13,19 @@ const App: React.FC = () => {
   return (
     <AppProvider>
       <Router>
-        <Switch>
-          <Route path="/login" component={LoginPage} />
-          <Route path="/admin" component={AdminDashboard} />
-          <Route path="/checkout" component={CheckoutPage} />
-          <Route path="/orders" component={OrdersPage} />
-          <Route path="/c/:campaignId/home" component={HomePage} />
-          {/* Fallback routes using Redirect instead of Navigate for v5 compatibility */}
-          <Redirect from="/home" to="/c/1/home" />
-          <Redirect from="/" to="/c/1/home" exact />
-          <Redirect to="/c/1/home" />
-        </Switch>
+        {/* Swapped Switch for Routes in v6 */}
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/c/:campaignId/home" element={<HomePage />} />
+          
+          {/* Updated Redirects to Navigate for v6 compatibility */}
+          <Route path="/home" element={<Navigate to="/c/1/home" replace />} />
+          <Route path="/" element={<Navigate to="/c/1/home" replace />} />
+          <Route path="*" element={<Navigate to="/c/1/home" replace />} />
+        </Routes>
       </Router>
     </AppProvider>
   );

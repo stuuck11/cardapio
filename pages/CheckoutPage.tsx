@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, QrCode, CreditCard, CheckCircle2, MapPin, Smartphone, X, AlertCircle, Plus, Bike, Store } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Layout from '../components/Layout';
-import { useHistory } from 'react-router-dom';
+/* Replaced useHistory with useNavigate for react-router-dom v6 */
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '../components/Modals';
 import { Address } from '../types';
 import { asaasService } from '../services/asaas';
@@ -11,8 +12,8 @@ import { metaService } from '../services/meta';
 
 const CheckoutPage: React.FC = () => {
   const { cart, config, user, setUser, setAddress, createOrder, clearCart, activeCoupon, formatCurrency, activeCampaignId, products, cards, addCard } = useApp();
-  // Using useHistory instead of useNavigate for Router v5 compatibility
-  const history = useHistory();
+  /* useNavigate hook instead of useHistory */
+  const navigate = useNavigate();
   const [method, setMethod] = useState<'pix' | 'card'>('pix');
   const [cpf, setCpf] = useState('');
   const [name, setName] = useState(user?.name || '');
@@ -88,7 +89,7 @@ const CheckoutPage: React.FC = () => {
             }
             clearCart();
             setShowSuccess(true);
-            setTimeout(() => history.push('/orders'), 2000);
+            setTimeout(() => navigate('/orders'), 2000);
             clearInterval(interval);
           }
         } catch (e) {
@@ -97,7 +98,7 @@ const CheckoutPage: React.FC = () => {
       }, 5000); // Verifica a cada 5 segundos
     }
     return () => clearInterval(interval);
-  }, [currentPaymentId, showSuccess, config.metaPixelId, currentTotal, history, tempPhone, config.name, config.metaCapiToken, clearCart]);
+  }, [currentPaymentId, showSuccess, config.metaPixelId, currentTotal, navigate, tempPhone, config.name, config.metaCapiToken, clearCart]);
 
   const maskCpf = (v: string) => {
     v = v.replace(/\D/g, "");
@@ -241,7 +242,7 @@ const CheckoutPage: React.FC = () => {
         }
         createOrder(method, true, true);
         setShowSuccess(true);
-        setTimeout(() => history.push('/orders'), 2000);
+        setTimeout(() => navigate('/orders'), 2000);
       } else if (method === 'pix') {
         const qrCode = await asaasService.getPixQrCode(payment.id);
         setPixData({ encodedImage: qrCode.encodedImage, payload: qrCode.payload });
