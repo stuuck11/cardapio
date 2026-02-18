@@ -1,0 +1,7 @@
+{
+  "name": "cardapio",
+  "description": "Uma plataforma de cardápio digital completa com sistema de pedidos, checkout PIX/Cartão e painel administrativo integrado.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
