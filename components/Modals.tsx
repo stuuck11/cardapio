@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { X, Search, MapPin, Bike, Store, Trash2, Check, Plus, Minus, CreditCard, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -15,11 +16,6 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-6">
-      {/* 
-        Ajustado para mobile: 
-        Para os popups de sacola e produtos (não centrados), agora usa h-full 
-        para ocupar a tela inteira, mantendo o arredondamento sutil no topo (rounded-t-2xl).
-      */}
       <div className={`bg-white w-full flex flex-col animate-fade-in shadow-2xl overflow-hidden ${centered ? 'max-w-md h-auto rounded-2xl mx-4 mb-auto sm:mb-0' : 'h-full rounded-t-2xl sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl'}`}>
         <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-white z-10 shrink-0">
           <h3 className="font-bold text-lg text-black">{title}</h3>
@@ -302,41 +298,63 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
   const { addToCart } = useApp();
   const [qty, setQty] = useState(1);
   const [observation, setObservation] = useState('');
-  const [selections, setSelections] = useState<Record<string, OptionItem[]>>({});
+  const [itemQuantities, setItemQuantities] = useState<Record<string, Record<string, number>>>({});
   const [error, setError] = useState('');
 
   if (!product) return null;
 
-  const handleToggleOption = (optionId: string, item: OptionItem, max: number) => {
-    const current = selections[optionId] || [];
-    const isSelected = current.find(i => i.id === item.id);
-    if (isSelected) {
-      setSelections({ ...selections, [optionId]: current.filter(i => i.id !== item.id) });
-    } else {
-      if (max === 1) {
-        setSelections({ ...selections, [optionId]: [item] });
-      } else if (current.length < max) {
-        setSelections({ ...selections, [optionId]: [...current, item] });
+  const handleUpdateItemQuantity = (optionId: string, item: OptionItem, delta: number, max: number) => {
+    const groupSelections = itemQuantities[optionId] || {};
+    const currentGroupTotal = Object.values(groupSelections).reduce((a, b) => a + b, 0);
+    const currentItemCount = groupSelections[item.id] || 0;
+    
+    const nextItemCount = currentItemCount + delta;
+    
+    if (nextItemCount < 0) return;
+    if (delta > 0 && currentGroupTotal >= max) return;
+    
+    setItemQuantities({
+      ...itemQuantities,
+      [optionId]: {
+        ...groupSelections,
+        [item.id]: nextItemCount
       }
-    }
+    });
   };
 
-  // Fixed: Added explicit type casting to Object.values(selections) to prevent 'unknown' type inference
   const calculateTotalPrice = () => {
     let total = product.price;
-    (Object.values(selections) as OptionItem[][]).forEach(items => {
-      items.forEach(item => total += item.price);
+    Object.entries(itemQuantities).forEach(([optId, itemCounts]) => {
+      Object.entries(itemCounts).forEach(([itemId, count]) => {
+        const itemData = product.options?.find(o => o.id === optId)?.items.find(i => i.id === itemId);
+        if (itemData) total += itemData.price * count;
+      });
     });
     return total;
   };
 
   const handleAdd = () => {
-    const missing = product.options?.filter(opt => opt.minSelection > 0 && (selections[opt.id]?.length || 0) < opt.minSelection);
+    const missing = product.options?.filter(opt => {
+        const count = Object.values(itemQuantities[opt.id] || {}).reduce((a, b) => a + b, 0);
+        return opt.minSelection > 0 && count < opt.minSelection;
+    });
+
     if (missing && missing.length > 0) {
       setError(`Selecione as opções obrigatórias: ${missing.map(m => m.title).join(', ')}`);
       return;
     }
-    // Fixed: Added explicit type casting to Object.entries(selections) to prevent 'unknown' type inference in selectedOptions mapping
+
+    const selectedOptions = Object.entries(itemQuantities).map(([optId, itemCounts]) => {
+      const items: OptionItem[] = [];
+      Object.entries(itemCounts).forEach(([itemId, count]) => {
+        const itemData = product.options?.find(o => o.id === optId)?.items.find(i => i.id === itemId);
+        if (itemData) {
+          for (let i = 0; i < count; i++) items.push(itemData);
+        }
+      });
+      return { optionId: optId, items };
+    });
+
     const cartItem: CartItem = {
       id: Math.random().toString(36).substr(2, 9),
       productId: product.id,
@@ -345,8 +363,9 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
       totalPrice: calculateTotalPrice(),
       quantity: qty,
       observation,
-      selectedOptions: (Object.entries(selections) as [string, OptionItem[]][]).map(([id, items]) => ({ optionId: id, items }))
+      selectedOptions
     };
+
     addToCart(cartItem);
     setError('');
     onClose();
@@ -354,63 +373,98 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={product.name}>
-      <div className="p-6 h-full">
+      <div className="h-full">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 text-sm font-bold border border-red-100 animate-fade-in">
+          <div className="m-4 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 text-sm font-bold border border-red-100 animate-fade-in">
             <AlertCircle size={20} /> {error}
           </div>
         )}
-        <div className="pb-32 space-y-8 text-black h-full">
-          <img src={product.imageUrl} alt={product.name} className="w-full h-64 object-cover rounded-2xl shadow-sm" />
-          <div className="px-1">
-            <h2 className="text-2xl font-extrabold mb-2">{product.name}</h2>
-            <p className="text-gray-500 text-base leading-relaxed">{product.description}</p>
+        <div className="pb-32 text-black h-full">
+          <img src={product.imageUrl} alt={product.name} className="w-full h-56 object-cover shadow-sm" />
+          
+          <div className="p-5 space-y-1 bg-white">
+            <h2 className="text-xl font-bold text-black">{product.name}</h2>
+            <p className="text-gray-500 text-sm leading-tight">{product.description}</p>
+            <p className="text-sm font-bold text-gray-800 pt-1">A partir de R$ {product.price.toFixed(2).replace('.', ',')}</p>
           </div>
-          <div className="space-y-10">
+
+          <div className="space-y-0">
             {product.options?.map(opt => {
-              const selectedCount = selections[opt.id]?.length || 0;
+              const selectedGroup = itemQuantities[opt.id] || {};
+              const selectedCount = Object.values(selectedGroup).reduce((a, b) => a + b, 0);
               const isRequired = opt.minSelection > 0;
               const isComplete = selectedCount >= opt.minSelection;
+              
               return (
-                <div key={opt.id} className="pt-2">
-                  <div className="flex justify-between items-center mb-5">
-                    <div>
-                      <h4 className="font-extrabold text-xl">{opt.title}</h4>
-                      <p className="text-sm text-gray-400 font-bold uppercase tracking-wider">{opt.subtitle}</p>
+                <div key={opt.id} className="border-b last:border-0">
+                  {/* Cabeçalho do Grupo (Cinza conforme print) */}
+                  <div className="bg-[#f0f2f5] px-5 py-4 flex justify-between items-center border-y border-gray-100 mt-2">
+                    <div className="space-y-0.5">
+                      <h4 className="font-bold text-gray-800 text-[13px]">{opt.title}</h4>
+                      <p className="text-[11px] text-gray-500 font-medium">{opt.subtitle}</p>
                     </div>
-                    <div className="flex gap-2">
-                      {isRequired && (
-                        <span className={`text-[10px] px-3 py-1.5 rounded-full font-bold uppercase tracking-widest ${isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-800 text-white'}`}>
-                          {isComplete ? 'Concluído' : 'Obrigatório'}
-                        </span>
-                      )}
-                      {isComplete && <div className="bg-green-500 text-white p-2 rounded-full shadow-lg shadow-green-100"><Check size={16} strokeWidth={4} /></div>}
-                    </div>
+                    {selectedCount > 0 && (
+                        <div className="flex items-center gap-2">
+                            <div className="bg-green-600 text-white px-2 py-0.5 rounded-sm flex items-center gap-1.5 shadow-sm">
+                                <span className="text-[11px] font-bold">{selectedCount}</span>
+                                <Check size={12} strokeWidth={4} />
+                            </div>
+                        </div>
+                    )}
                   </div>
-                  <div className="space-y-3">
+
+                  {/* Itens do Grupo */}
+                  <div className="divide-y divide-gray-50 bg-white">
                     {opt.items.map(item => {
-                      const isSelected = selections[opt.id]?.some(i => i.id === item.id);
+                      const count = selectedGroup[item.id] || 0;
                       return (
-                        <button key={item.id} onClick={() => handleToggleOption(opt.id, item, opt.maxSelection)} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all duration-200 ${isSelected ? 'border-green-500 bg-green-50 scale-[1.01]' : 'border-gray-100'}`}>
-                          <div className="flex items-center gap-4">{item.iconUrl && <img src={item.iconUrl} className="w-10 h-10 rounded-xl object-cover" alt="" />}<span className="text-lg font-bold">{item.name}</span></div>
-                          <div className="flex items-center gap-4"><span className="text-sm font-extrabold text-gray-600">{item.price > 0 ? `+ R$ ${item.price.toFixed(2).replace('.', ',')}` : 'Grátis'}</span><div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-100' : 'border-gray-200'}`}>{isSelected && <Check size={16} strokeWidth={4} />}</div></div>
-                        </button>
+                        <div key={item.id} className="flex justify-between items-center p-5 group transition-colors hover:bg-gray-50/50">
+                          <div className="flex-1 space-y-1">
+                            <p className="text-[13px] font-bold text-black">{item.name}</p>
+                            {item.description && <p className="text-[11px] text-gray-400 font-medium">{item.description}</p>}
+                            <p className="text-[12px] font-bold text-gray-500">+ R$ {item.price.toFixed(2).replace('.', ',')}</p>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 ml-4">
+                            {item.iconUrl && <img src={item.iconUrl} className="w-12 h-12 rounded-xl object-cover border border-gray-50" alt="" />}
+                            
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={() => handleUpdateItemQuantity(opt.id, item, -1, opt.maxSelection)}
+                                    className={`p-1 text-black transition-opacity ${count === 0 ? 'opacity-20 cursor-not-allowed' : 'hover:bg-gray-100 rounded'}`}
+                                >
+                                    <Minus size={18} strokeWidth={3} />
+                                </button>
+                                <span className={`text-[15px] font-bold min-w-[1.2ch] text-center ${count > 0 ? 'text-black' : 'text-gray-300'}`}>{count}</span>
+                                <button 
+                                    onClick={() => handleUpdateItemQuantity(opt.id, item, 1, opt.maxSelection)}
+                                    className={`p-1 text-black transition-opacity ${selectedCount >= opt.maxSelection ? 'opacity-20 cursor-not-allowed' : 'hover:bg-gray-100 rounded'}`}
+                                >
+                                    <Plus size={18} strokeWidth={3} />
+                                </button>
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
               );
             })}
-            <div className="pt-2">
-              <div className="flex justify-between items-center mb-4"><h4 className="font-extrabold text-xl">Alguma observação?</h4><span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{observation.length}/500</span></div>
-              <textarea placeholder="Ex: retirar cebolinha, talheres descartáveis, etc." className="w-full p-5 border-2 border-gray-100 rounded-2xl h-32 text-lg text-black bg-white focus:border-black transition-all resize-none outline-none font-medium" maxLength={500} value={observation} onChange={(e) => setObservation(e.target.value)} />
+
+            {/* Observação */}
+            <div className="p-5 mt-4 space-y-3">
+              <div className="flex justify-between items-center"><h4 className="font-bold text-[13px] text-gray-800 uppercase tracking-tight">Alguma observação?</h4><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{observation.length}/500</span></div>
+              <textarea placeholder="Ex: retirar cebolinha, talheres descartáveis, etc." className="w-full p-4 border border-gray-200 rounded-xl h-24 text-sm text-black bg-white focus:border-black transition-all resize-none outline-none font-medium" maxLength={500} value={observation} onChange={(e) => setObservation(e.target.value)} />
             </div>
           </div>
         </div>
       </div>
-      <div className="fixed bottom-0 left-0 w-full p-4 bg-white border-t sm:relative sm:p-0 sm:mt-10 sm:border-0 z-20 shrink-0">
+
+      {/* Footer Fixo */}
+      <div className="fixed bottom-0 left-0 w-full p-4 bg-white border-t sm:relative sm:p-0 sm:mt-0 sm:border-0 z-20 shrink-0">
         <div className="flex items-center gap-3 max-w-md mx-auto h-14 flex-nowrap px-2">
-          <div className="flex items-center border-2 border-gray-100 rounded-xl overflow-hidden bg-gray-50 h-full shrink-0 shadow-sm">
+          <div className="flex items-center border-2 border-gray-100 rounded-xl overflow-hidden bg-gray-50 h-full shrink-0">
             <button onClick={() => setQty(Math.max(1, qty - 1))} className="px-4 text-black hover:bg-gray-100 transition-colors"><Minus size={18} strokeWidth={3} /></button>
             <span className="px-1 font-extrabold text-lg text-black min-w-[1.5ch] text-center">{qty}</span>
             <button onClick={() => setQty(qty + 1)} className="px-4 text-black hover:bg-gray-100 transition-colors"><Plus size={18} strokeWidth={3} /></button>

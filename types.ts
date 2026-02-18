@@ -46,6 +46,7 @@ export interface OptionItem {
   id: string;
   name: string;
   price: number;
+  description?: string; // Legenda/descrição do item (ex: "Lata 350ml")
   iconUrl?: string; // Link para o ícone do adicional
 }
 
