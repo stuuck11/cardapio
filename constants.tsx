@@ -11,7 +11,7 @@ export const INITIAL_STORE_CONFIG: StoreConfig = {
   minOrder: 30.00,
   primaryColor: "#E31B23",
   bannerUrl: "https://static.saipos.com/site_delivery/cover15.png",
-  logoUrl: "https://static.saipos.com/saipos-estatico/site-data/38461/logo/a87685d783721ab4d8454d379b1c2300imagem_2024-04-29_201541416.png",
+  logoUrl: "https://imgur.com/qfIhJeT.png",
   gateway: 'asaas',
   metaCapiToken: "",
 };

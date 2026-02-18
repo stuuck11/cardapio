@@ -385,7 +385,7 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
           <div className="p-5 space-y-1 bg-white">
             <h2 className="text-xl font-bold text-black">{product.name}</h2>
             <p className="text-gray-500 text-sm leading-tight">{product.description}</p>
-            <p className="text-sm font-bold text-gray-800 pt-1">A partir de R$ {product.price.toFixed(2).replace('.', ',')}</p>
+            <p className="text-sm font-bold text-gray-800 pt-1">R$ {product.price.toFixed(2).replace('.', ',')}</p>
           </div>
 
           <div className="space-y-0">
