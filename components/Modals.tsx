@@ -16,7 +16,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 p-4 sm:p-6">
-      <div className={`bg-white w-full flex flex-col animate-fade-in shadow-2xl overflow-hidden ${centered ? 'max-w-md h-auto rounded-3xl' : 'h-full sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-3xl'}`}>
+      {/* Alterado de rounded-3xl para rounded-2xl para bordas sutis */}
+      <div className={`bg-white w-full flex flex-col animate-fade-in shadow-2xl overflow-hidden ${centered ? 'max-w-md h-auto rounded-2xl' : 'h-full sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl'}`}>
         <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-white z-10 shrink-0">
           <h3 className="font-bold text-lg text-black">{title}</h3>
           <button onClick={onClose} className="p-1.5 bg-gray-100 rounded-full text-black hover:bg-gray-200 transition-colors">
@@ -244,11 +245,11 @@ export const DeliveryModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
         {step === 'selection' && (
           <div className="space-y-6 text-black h-full flex flex-col justify-center">
             <h4 className="text-2xl font-bold mb-4">Como deseja receber seu pedido?</h4>
-            <button onClick={() => setStep('address')} className="w-full flex items-center p-6 border-2 border-gray-100 rounded-3xl gap-5 text-left hover:border-black hover:bg-gray-50 transition-all shadow-sm">
+            <button onClick={() => setStep('address')} className="w-full flex items-center p-6 border-2 border-gray-100 rounded-2xl gap-5 text-left hover:border-black hover:bg-gray-50 transition-all shadow-sm">
               <div className="bg-blue-100 p-5 rounded-2xl text-blue-600"><Bike size={32} /></div>
               <div><p className="font-bold text-xl">Delivery</p><p className="text-sm text-gray-500 font-medium">Receba no seu endereço</p></div>
             </button>
-            <button onClick={handlePickupSelection} className="w-full flex items-center p-6 border-2 border-gray-100 rounded-3xl gap-5 text-left hover:border-black hover:bg-gray-50 transition-all shadow-sm">
+            <button onClick={handlePickupSelection} className="w-full flex items-center p-6 border-2 border-gray-100 rounded-2xl gap-5 text-left hover:border-black hover:bg-gray-50 transition-all shadow-sm">
               <div className="bg-gray-100 p-5 rounded-2xl text-gray-600"><Store size={32} /></div>
               <div><p className="font-bold text-xl">Retirada na loja</p><p className="text-sm text-gray-500 font-medium">Retire no local</p></div>
             </button>
@@ -355,7 +356,7 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
           </div>
         )}
         <div className="pb-32 space-y-8 text-black h-full">
-          <img src={product.imageUrl} alt={product.name} className="w-full h-64 object-cover rounded-3xl shadow-sm" />
+          <img src={product.imageUrl} alt={product.name} className="w-full h-64 object-cover rounded-2xl shadow-sm" />
           <div className="px-1">
             <h2 className="text-2xl font-extrabold mb-2">{product.name}</h2>
             <p className="text-gray-500 text-base leading-relaxed">{product.description}</p>
@@ -404,12 +405,12 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
       </div>
       <div className="fixed bottom-0 left-0 w-full p-4 bg-white border-t sm:relative sm:p-0 sm:mt-10 sm:border-0 z-20 shrink-0">
         <div className="flex items-center gap-3 max-w-md mx-auto h-14 flex-nowrap px-2">
-          <div className="flex items-center border-2 border-gray-100 rounded-2xl overflow-hidden bg-gray-50 h-full shrink-0 shadow-sm">
+          <div className="flex items-center border-2 border-gray-100 rounded-xl overflow-hidden bg-gray-50 h-full shrink-0 shadow-sm">
             <button onClick={() => setQty(Math.max(1, qty - 1))} className="px-4 text-black hover:bg-gray-100 transition-colors"><Minus size={18} strokeWidth={3} /></button>
             <span className="px-1 font-extrabold text-lg text-black min-w-[1.5ch] text-center">{qty}</span>
             <button onClick={() => setQty(qty + 1)} className="px-4 text-black hover:bg-gray-100 transition-colors"><Plus size={18} strokeWidth={3} /></button>
           </div>
-          <button onClick={handleAdd} className="flex-1 h-full bg-black text-white rounded-2xl font-bold flex items-center justify-between px-4 gap-2 shadow-xl active:scale-[0.97] transition-all min-w-0">
+          <button onClick={handleAdd} className="flex-1 h-full bg-black text-white rounded-xl font-bold flex items-center justify-between px-4 gap-2 shadow-xl active:scale-[0.97] transition-all min-w-0">
             <span className="uppercase text-[11px] tracking-tight truncate">Adicionar</span>
             <span className="text-sm shrink-0">R$ {(calculateTotalPrice() * qty).toFixed(2).replace('.', ',')}</span>
           </button>

@@ -66,7 +66,8 @@ const HomePage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="px-4 py-2 bg-white border-b sticky top-0 z-[100] shadow-sm">
+      {/* Header 'Buscar no cardápio' fixo no topo com z-index alto */}
+      <div className="px-4 py-2 bg-white border-b sticky top-0 z-[115] shadow-sm">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
           <input type="text" placeholder="Buscar no cardápio" className="w-full bg-white border border-gray-200 rounded-xl py-2 pl-10 pr-4 text-[12px] font-medium text-black outline-none placeholder-gray-400 focus:border-black transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -90,7 +91,8 @@ const HomePage: React.FC = () => {
         </div>
         <button onClick={() => setIsDeliveryModalOpen(true)} className="w-full p-3 bg-white border border-gray-100 rounded-xl flex items-center justify-between shadow-sm"><div className="flex items-center gap-2.5"><div className="bg-gray-50 p-1.5 rounded-full"><MapPin size={16} className="text-black" /></div><div className="text-left"><span className="block font-bold text-[11px] text-black">{user?.address ? (user.address.type === 'delivery' ? user.address.street : 'Retirada no local') : 'Calcular taxa de entrega'}</span><span className="block text-[9px] text-gray-400 font-medium">{user?.address ? (user.address.type === 'delivery' ? `60-90 min / ${formatCurrency(config.deliveryFee)}` : config.address) : 'Toque para selecionar'}</span></div></div><ChevronRight size={16} className="text-gray-300" /></button>
       </div>
-      <div className="mt-5 sticky top-[44px] z-50 bg-white border-b flex items-center shadow-sm h-12">
+      {/* Sticky categories bar fixado logo abaixo do header de busca */}
+      <div className="mt-5 sticky top-[44px] z-[110] bg-white border-b flex items-center shadow-sm h-12">
         <div className="relative h-full"><button onClick={() => setIsMenuOpen(!isMenuOpen)} className="px-4 border-r h-full flex items-center"><Menu size={18} className="text-black" /></button>{isMenuOpen && (<><div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setIsMenuOpen(false)}/><div className="absolute top-full left-4 z-[150] mt-1 bg-white w-64 max-h-80 rounded-lg shadow-xl border border-gray-100 overflow-y-auto animate-fade-in flex flex-col p-1">{availableCategories.map(cat => (<button key={cat.id} onClick={() => scrollToCategory(cat.id)} className="w-full text-left px-4 py-3 text-[14px] font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b last:border-0 border-gray-50">{cat.name}</button>))}</div></>)}</div>
         <div className="flex-1 overflow-x-auto hide-scrollbar flex gap-5 px-4 h-full">{availableCategories.map(cat => (<button key={cat.id} onClick={() => scrollToCategory(cat.id)} className={`whitespace-nowrap py-3 text-[10px] font-bold uppercase tracking-wider relative h-full flex items-center ${activeCategory === cat.id ? 'text-black' : 'text-gray-400'}`}>{cat.name}{activeCategory === cat.id && (<div className="absolute bottom-0 left-0 w-full h-[2px] bg-black" />)}</button>))}</div>
       </div>

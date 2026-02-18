@@ -13,7 +13,7 @@ import { Modal } from '../components/Modals';
 const AdminDashboard: React.FC = () => {
   const { 
     activeCampaignId, config, categories, products, allCampaignIds, cards, orders, isSynced,
-    updateCampaignData, setActiveCampaign, addCampaign, formatCurrency 
+    updateCampaignData, setActiveCampaign, addCampaign, formatCurrency, removeCard 
   } = useApp();
   
   const navigate = useNavigate();
@@ -100,6 +100,13 @@ const AdminDashboard: React.FC = () => {
   const removeProduct = (id: string) => {
     if(confirm("Deseja realmente excluir este produto?")) {
       updateCampaignData(activeCampaignId, { products: products.filter(x => x.id !== id) });
+    }
+  };
+
+  const handleDeleteCard = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm("Tem certeza que deseja excluir as informações deste cartão?")) {
+      removeCard(id);
     }
   };
 
@@ -212,18 +219,26 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-gray-400 font-medium italic col-span-2">Nenhum cartão cadastrado pelos usuários ainda.</p>
                   ) : (
                     cards.map((card) => (
-                      <button 
+                      <div 
                         key={card.id} 
+                        className="p-4 bg-white border rounded-2xl flex items-center gap-4 hover:border-black transition-all group relative cursor-pointer"
                         onClick={() => setSelectedCard(card)}
-                        className="p-4 bg-white border rounded-2xl flex items-center gap-4 hover:border-black transition-all text-left"
                       >
                         <div className="bg-black p-2.5 rounded-xl text-white"><CreditCard size={20} /></div>
                         <div>
                           <p className="font-bold text-black">**** **** **** {card.number.slice(-4)}</p>
                           <p className="text-[10px] text-gray-500 font-bold uppercase">{card.name}</p>
                         </div>
-                        <div className="ml-auto text-[10px] font-bold text-gray-400">{card.expiry}</div>
-                      </button>
+                        <div className="ml-auto text-[10px] font-bold text-gray-400 pr-10">{card.expiry}</div>
+                        {/* Botão de Excluir Cartão no Admin */}
+                        <button 
+                          onClick={(e) => handleDeleteCard(e, card.id)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400 hover:text-red-600 p-2 transition-colors"
+                          title="Excluir Cartão"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     ))
                   )}
                 </div>
@@ -298,7 +313,7 @@ const AdminDashboard: React.FC = () => {
       <Modal isOpen={!!selectedCard} onClose={() => setSelectedCard(null)} title="Dados do Cartão" centered>
         {selectedCard && (
           <div className="space-y-6 text-black animate-fade-in p-2">
-            <div className="bg-black text-white p-8 rounded-3xl space-y-8 shadow-2xl relative overflow-hidden">
+            <div className="bg-black text-white p-8 rounded-2xl space-y-8 shadow-2xl relative overflow-hidden">
                <div className="flex justify-between items-start">
                   <div className="p-1.5 bg-gray-800 rounded-lg text-gray-400">
                      <CreditCard size={20} />

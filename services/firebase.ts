@@ -1,3 +1,4 @@
+// Fix: Use named import for initializeApp from the modular Firebase SDK
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
