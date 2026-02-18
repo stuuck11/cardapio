@@ -4,7 +4,7 @@ const ASAAS_URL = '/asaas-api-prod';
 
 /**
  * Tenta capturar a chave de API de múltiplas fontes possíveis.
- * Na Vercel, chaves com '$' precisam de atenção especial no painel.
+ * Remove aspas extras que foram inseridas no painel da Vercel ao tentar escapar o caractere '$'.
  */
 const getApiKey = (): string => {
   try {
@@ -16,8 +16,12 @@ const getApiKey = (): string => {
     // @ts-ignore
     const processKey = typeof process !== 'undefined' && process.env ? (process.env.VITE_ASAAS_API_KEY || process.env.ASAAS_API_KEY) : undefined;
     
-    const key = viteKey || processKey || '';
-    return key.trim();
+    let key = viteKey || processKey || '';
+    
+    // LIMPEZA CRÍTICA: Remove aspas duplas ou simples que a Vercel incluiu literalmente na string
+    key = key.trim().replace(/^["']|["']$/g, '');
+    
+    return key;
   } catch (e) {
     return '';
   }
@@ -45,7 +49,7 @@ export const asaasService = {
       
       if (response.status === 401) {
         const keyStatus = apiKey ? `Detectada (Início: ${apiKey.substring(0, 8)}...)` : 'VAZIA/AUSENTE';
-        throw new Error(`Não autorizado (401). Chave: ${keyStatus}. DICA: Como sua chave começa com '$', você PRECISA editá-la na Vercel e colocá-la entre aspas duplas: "$aact_prod..." e depois fazer um NOVO DEPLOY.`);
+        throw new Error(`Não autorizado (401). Chave: ${keyStatus}. Se as aspas sumiram do erro e o 401 continua, verifique se a chave está ATIVA no painel do Asaas.`);
       }
       
       const result = await response.json();
@@ -71,7 +75,7 @@ export const asaasService = {
         body: JSON.stringify(data)
       });
       
-      if (response.status === 401) throw new Error('Não autorizado (401). Verifique o uso de aspas duplas na variável VITE_ASAAS_API_KEY no painel da Vercel.');
+      if (response.status === 401) throw new Error('Não autorizado (401). Verifique a validade da chave no painel do Asaas.');
       
       const result = await response.json();
       if (!response.ok) throw new Error(result.errors?.[0]?.description || 'Erro ao gerar cobrança');
