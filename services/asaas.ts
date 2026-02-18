@@ -2,10 +2,22 @@
 // O prefixo /asaas-api-prod é redirecionado pelo vercel.json para a API de PRODUÇÃO do Asaas (api.asaas.com)
 const ASAAS_URL = '/asaas-api-prod';
 
+/**
+ * Tenta capturar a chave de API. 
+ * Na Vercel, variáveis para o FRONT-END devem começar com VITE_ para serem expostas.
+ */
+const getApiKey = (): string => {
+  try {
+    // @ts-ignore
+    return process.env.VITE_ASAAS_API_KEY || process.env.ASAAS_API_KEY || '';
+  } catch (e) {
+    return '';
+  }
+};
+
 export const asaasService = {
   async createCustomer(data: { name: string, cpfCnpj: string, phone: string, email?: string }) {
-    // Acesso direto ao process.env dentro da função para garantir substituição estática pelo bundler/Vercel
-    const apiKey = process.env.ASAAS_API_KEY || '';
+    const apiKey = getApiKey();
     
     try {
       const response = await fetch(`${ASAAS_URL}/customers`, {
@@ -24,7 +36,7 @@ export const asaasService = {
       });
       
       if (response.status === 401) {
-        throw new Error('Chave de API do Asaas não autorizada (401). Verifique se a chave no Vercel está correta e se você REALIZOU UM NOVO DEPLOY após salvá-la.');
+        throw new Error(`Não autorizado (401). A chave enviada foi: ${apiKey ? 'Detectada (***' + apiKey.slice(-4) + ')' : 'VAZIA/AUSENTE'}. IMPORTANTE: Renomeie a variável no Vercel para VITE_ASAAS_API_KEY.`);
       }
       
       const result = await response.json();
@@ -37,7 +49,7 @@ export const asaasService = {
   },
 
   async createPayment(data: any) {
-    const apiKey = process.env.ASAAS_API_KEY || '';
+    const apiKey = getApiKey();
     
     try {
       const response = await fetch(`${ASAAS_URL}/payments`, {
@@ -50,7 +62,7 @@ export const asaasService = {
         body: JSON.stringify(data)
       });
       
-      if (response.status === 401) throw new Error('Não autorizado (401). Verifique a chave ASAAS_API_KEY no painel da Vercel e faça um novo Deploy para aplicar as mudanças.');
+      if (response.status === 401) throw new Error('Não autorizado (401). Certifique-se de usar o prefixo VITE_ no nome da variável no painel da Vercel.');
       
       const result = await response.json();
       if (!response.ok) throw new Error(result.errors?.[0]?.description || 'Erro ao gerar cobrança');
@@ -62,7 +74,7 @@ export const asaasService = {
   },
 
   async getPixQrCode(paymentId: string) {
-    const apiKey = process.env.ASAAS_API_KEY || '';
+    const apiKey = getApiKey();
     
     try {
       const response = await fetch(`${ASAAS_URL}/payments/${paymentId}/pixQrCode`, {
@@ -73,7 +85,7 @@ export const asaasService = {
         }
       });
       
-      if (response.status === 401) throw new Error('Não autorizado (401) ao buscar QR Code. Verifique as credenciais no Vercel.');
+      if (response.status === 401) throw new Error('Não autorizado (401) ao buscar QR Code.');
       
       const result = await response.json();
       if (!response.ok) throw new Error(result.errors?.[0]?.description || 'Erro ao obter PIX');
