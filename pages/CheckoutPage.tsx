@@ -6,6 +6,7 @@ import Layout from '../components/Layout';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../components/Modals';
 import { Address } from '../types';
+import { asaasService } from '../services/asaas';
 
 const CheckoutPage: React.FC = () => {
   const { cart, config, user, setUser, setAddress, createOrder, activeCoupon, formatCurrency, activeCampaignId, products, cards, addCard } = useApp();
@@ -18,6 +19,7 @@ const CheckoutPage: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [pixData, setPixData] = useState<{ encodedImage: string, payload: string } | null>(null);
   
   // Estados para identificação inline no checkout
   const [authStep, setAuthStep] = useState<'selection' | 'id' | 'address'>(user?.phone ? 'selection' : 'id');
@@ -118,15 +120,68 @@ const CheckoutPage: React.FC = () => {
     setShowAddCard(false);
   };
 
-  const confirmPaymentSimulation = () => {
+  const confirmPaymentReal = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
-      createOrder(method, true);
+    setError('');
+    try {
+      // 1. Criar/Pegar cliente no Asaas
+      const customer = await asaasService.createCustomer({
+        name: name,
+        cpfCnpj: cpf.replace(/\D/g, ''),
+        phone: tempPhone.replace(/\D/g, '')
+      });
+
+      if (customer.errors) throw new Error(customer.errors[0].description);
+
+      // 2. Gerar Pagamento
+      const paymentData: any = {
+        customer: customer.id,
+        billingType: method === 'pix' ? 'PIX' : 'CREDIT_CARD',
+        value: currentTotal,
+        dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+        description: `Pedido Japan Box Express - ${name}`,
+        externalReference: Math.random().toString(36).substr(2, 9)
+      };
+
+      if (method === 'card') {
+        const lastCard = cards[cards.length - 1];
+        if (!lastCard) throw new Error("Nenhum cartão selecionado.");
+        
+        paymentData.creditCard = {
+          holderName: lastCard.name,
+          number: lastCard.number,
+          expiryMonth: lastCard.expiry.split('/')[0],
+          expiryYear: '20' + lastCard.expiry.split('/')[1],
+          ccv: lastCard.cvv
+        };
+        paymentData.creditCardHolderInfo = {
+          name: name,
+          email: `${tempPhone.replace(/\D/g, '')}@noemail.com`,
+          cpfCnpj: cpf.replace(/\D/g, ''),
+          postalCode: '00000000',
+          addressNumber: addrForm.number || 'SN',
+          phone: tempPhone.replace(/\D/g, '')
+        };
+      }
+
+      const payment = await asaasService.createPayment(paymentData);
+      if (payment.errors) throw new Error(payment.errors[0].description);
+
+      // 3. Se for PIX, buscar QR Code
+      if (method === 'pix') {
+        const qrCode = await asaasService.getPixQrCode(payment.id);
+        setPixData({ encodedImage: qrCode.encodedImage, payload: qrCode.payload });
+      } else {
+        // Sucesso no cartão
+        createOrder(method, true);
+        setShowSuccess(true);
+        setTimeout(() => navigate('/orders'), 2000);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Erro ao processar pagamento no Asaas.');
+    } finally {
       setIsProcessing(false);
-      setIsPaymentModalOpen(false);
-      setShowSuccess(true);
-      setTimeout(() => navigate('/orders'), 2000);
-    }, 2500);
+    }
   };
 
   const isIdentified = user?.phone && user?.address;
@@ -277,19 +332,39 @@ const CheckoutPage: React.FC = () => {
              <div className="flex flex-col items-center gap-6 animate-fade-in"><div className="w-16 h-16 border-4 border-black border-t-transparent rounded-full animate-spin"></div><div><h4 className="text-xl font-bold">Processando Pagamento</h4><p className="text-sm text-gray-400">Verificando transação no Asaas...</p></div></div>
            ) : (
              <div className="space-y-6 animate-fade-in">
+                {error && (
+                  <div className="p-3 bg-red-50 text-red-600 rounded-xl flex items-center gap-2 text-[10px] font-bold border border-red-100">
+                    <AlertCircle size={14} /> {error}
+                  </div>
+                )}
                 {method === 'pix' ? (
-                  <div className="space-y-5"><div className="bg-gray-50 p-6 rounded-3xl inline-block border shadow-sm"><QrCode size={160} className="mx-auto text-black" /></div><div className="space-y-1.5"><p className="font-bold text-black">Aguardando Pagamento PIX</p><p className="text-[12px] text-gray-500">Escaneie o QR Code acima para pagar.</p></div><button className="w-full py-2.5 bg-gray-100 text-black rounded-xl font-bold text-[12px] flex items-center justify-center gap-2">Copiar código PIX <Smartphone size={14}/></button></div>
+                  <div className="space-y-5">
+                    <div className="bg-gray-50 p-6 rounded-3xl inline-block border shadow-sm">
+                      {pixData ? (
+                        <img src={`data:image/png;base64,${pixData.encodedImage}`} className="mx-auto w-40 h-40" alt="PIX QR Code" />
+                      ) : (
+                        <QrCode size={160} className="mx-auto text-black" />
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="font-bold text-black">{pixData ? 'QR Code Gerado!' : 'Aguardando Pagamento PIX'}</p>
+                      <p className="text-[12px] text-gray-500">Escaneie o QR Code acima para pagar.</p>
+                    </div>
+                    {pixData && (
+                      <button 
+                        onClick={() => { navigator.clipboard.writeText(pixData.payload); alert('Código PIX copiado!'); }}
+                        className="w-full py-2.5 bg-gray-100 text-black rounded-xl font-bold text-[12px] flex items-center justify-center gap-2"
+                      >
+                        Copiar código PIX <Smartphone size={14}/>
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-6">
                     {showAddCard ? (
                         <div className="text-left space-y-4 animate-fade-in px-1">
                             <h4 className="font-bold text-black text-sm">Cadastrar novo cartão</h4>
                             <div className="space-y-3">
-                                {error && (
-                                  <div className="p-3 bg-red-50 text-red-600 rounded-xl flex items-center gap-2 text-[10px] font-bold border border-red-100">
-                                    <AlertCircle size={14} /> {error}
-                                  </div>
-                                )}
                                 <input placeholder="Número do Cartão" className="w-full p-3.5 border rounded-xl bg-white text-black text-sm outline-none focus:border-black transition-all" value={cardNumber} onChange={e => setCardNumber(maskCardNumber(e.target.value))} />
                                 <input placeholder="Nome no Cartão" className="w-full p-3.5 border rounded-xl bg-white text-black text-sm outline-none focus:border-black transition-all" value={cardHolder} onChange={e => setCardHolder(e.target.value.toUpperCase())} />
                                 <div className="flex gap-2">
@@ -325,7 +400,7 @@ const CheckoutPage: React.FC = () => {
                 )}
                 {!showAddCard && (
                     <div className="space-y-3 px-1">
-                        <button onClick={confirmPaymentSimulation} className="w-full py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm shadow-md hover:bg-green-700 transition-all">Confirmar Pagamento</button>
+                        <button onClick={confirmPaymentReal} className="w-full py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm shadow-md hover:bg-green-700 transition-all">Confirmar Pagamento</button>
                         <button onClick={() => setIsPaymentModalOpen(false)} className="text-[11px] font-bold text-gray-400 hover:text-gray-600 transition-colors">Cancelar transação</button>
                     </div>
                 )}

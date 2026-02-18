@@ -1,5 +1,4 @@
-
-// Fix: Importing initializeApp correctly from the modular Firebase SDK
+// Modular Firebase SDK initialization
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
@@ -13,6 +12,7 @@ const firebaseConfig = {
   measurementId: "G-E8BPMB4MHJ"
 };
 
-// Initialize Firebase with the modular SDK
+// Initialize Firebase app instance
 const app = initializeApp(firebaseConfig);
+// Export Firestore database instance for use in AppContext
 export const db = getFirestore(app);
