@@ -2,6 +2,14 @@
 {
   "rewrites": [
     {
+      "source": "/asaas-api/:path*",
+      "destination": "https://sandbox.asaas.com/api/v3/:path*"
+    },
+    {
+      "source": "/asaas-api-prod/:path*",
+      "destination": "https://api.asaas.com/v3/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

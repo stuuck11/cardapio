@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Search, MapPin, Bike, Store, Trash2, Check, Plus, Minus, CreditCard, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -322,9 +321,10 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
     }
   };
 
+  // Fixed: Added explicit type casting to Object.values(selections) to prevent 'unknown' type inference
   const calculateTotalPrice = () => {
     let total = product.price;
-    Object.values(selections).forEach(items => {
+    (Object.values(selections) as OptionItem[][]).forEach(items => {
       items.forEach(item => total += item.price);
     });
     return total;
@@ -336,6 +336,7 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
       setError(`Selecione as opções obrigatórias: ${missing.map(m => m.title).join(', ')}`);
       return;
     }
+    // Fixed: Added explicit type casting to Object.entries(selections) to prevent 'unknown' type inference in selectedOptions mapping
     const cartItem: CartItem = {
       id: Math.random().toString(36).substr(2, 9),
       productId: product.id,
@@ -344,7 +345,7 @@ export const ProductDetailModal: React.FC<{ isOpen: boolean; onClose: () => void
       totalPrice: calculateTotalPrice(),
       quantity: qty,
       observation,
-      selectedOptions: Object.entries(selections).map(([id, items]) => ({ optionId: id, items }))
+      selectedOptions: (Object.entries(selections) as [string, OptionItem[]][]).map(([id, items]) => ({ optionId: id, items }))
     };
     addToCart(cartItem);
     setError('');
