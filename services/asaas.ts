@@ -2,33 +2,16 @@
 // O prefixo /asaas-api-prod é redirecionado pelo vercel.json para a API de PRODUÇÃO do Asaas (api.asaas.com)
 const ASAAS_URL = '/asaas-api-prod';
 
-/**
- * IMPORTANTE: No navegador, process.env não existe nativamente.
- * Este método tenta capturar a chave injetada pelo ambiente do Vercel.
- */
-const getSafeApiKey = (): string => {
-  try {
-    // @ts-ignore
-    if (typeof process !== 'undefined' && process.env && process.env.ASAAS_API_KEY) {
-      return process.env.ASAAS_API_KEY;
-    }
-    return '';
-  } catch (e) {
-    return '';
-  }
-};
-
-const API_KEY = getSafeApiKey();
-
 export const asaasService = {
   async createCustomer(data: { name: string, cpfCnpj: string, phone: string, email?: string }) {
-    console.log('[Asaas] Iniciando criação de cliente em PRODUÇÃO...');
+    // Acesso direto ao process.env dentro da função para garantir substituição estática pelo bundler/Vercel
+    const apiKey = process.env.ASAAS_API_KEY || '';
     
     try {
       const response = await fetch(`${ASAAS_URL}/customers`, {
         method: 'POST',
         headers: { 
-          'access_token': API_KEY, 
+          'access_token': apiKey, 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -41,7 +24,7 @@ export const asaasService = {
       });
       
       if (response.status === 401) {
-        throw new Error('Chave de API do Asaas não autorizada. Verifique se a chave de PRODUÇÃO está correta nas variáveis de ambiente do Vercel.');
+        throw new Error('Chave de API do Asaas não autorizada (401). Verifique se a chave no Vercel está correta e se você REALIZOU UM NOVO DEPLOY após salvá-la.');
       }
       
       const result = await response.json();
@@ -54,19 +37,20 @@ export const asaasService = {
   },
 
   async createPayment(data: any) {
-    console.log('[Asaas] Criando cobrança em PRODUÇÃO:', data.billingType);
+    const apiKey = process.env.ASAAS_API_KEY || '';
+    
     try {
       const response = await fetch(`${ASAAS_URL}/payments`, {
         method: 'POST',
         headers: { 
-          'access_token': API_KEY, 
+          'access_token': apiKey, 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify(data)
       });
       
-      if (response.status === 401) throw new Error('Chave de API não autorizada para ambiente de produção.');
+      if (response.status === 401) throw new Error('Não autorizado (401). Verifique a chave ASAAS_API_KEY no painel da Vercel e faça um novo Deploy para aplicar as mudanças.');
       
       const result = await response.json();
       if (!response.ok) throw new Error(result.errors?.[0]?.description || 'Erro ao gerar cobrança');
@@ -78,14 +62,18 @@ export const asaasService = {
   },
 
   async getPixQrCode(paymentId: string) {
+    const apiKey = process.env.ASAAS_API_KEY || '';
+    
     try {
       const response = await fetch(`${ASAAS_URL}/payments/${paymentId}/pixQrCode`, {
         method: 'GET',
         headers: { 
-          'access_token': API_KEY,
+          'access_token': apiKey,
           'Accept': 'application/json'
         }
       });
+      
+      if (response.status === 401) throw new Error('Não autorizado (401) ao buscar QR Code. Verifique as credenciais no Vercel.');
       
       const result = await response.json();
       if (!response.ok) throw new Error(result.errors?.[0]?.description || 'Erro ao obter PIX');
