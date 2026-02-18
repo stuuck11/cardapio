@@ -123,6 +123,8 @@ const CheckoutPage: React.FC = () => {
   const confirmPaymentReal = async () => {
     setIsProcessing(true);
     setError('');
+    console.log('[Checkout Debug] Iniciando confirmPaymentReal...');
+    
     try {
       // 1. Criar/Pegar cliente no Asaas
       const customer = await asaasService.createCustomer({
@@ -131,7 +133,10 @@ const CheckoutPage: React.FC = () => {
         phone: tempPhone.replace(/\D/g, '')
       });
 
-      if (customer.errors) throw new Error(customer.errors[0].description);
+      if (!customer || customer.errors) {
+        const msg = customer?.errors?.[0]?.description || 'Erro desconhecido ao criar cliente';
+        throw new Error(msg);
+      }
 
       // 2. Gerar Pagamento
       const paymentData: any = {
@@ -145,7 +150,7 @@ const CheckoutPage: React.FC = () => {
 
       if (method === 'card') {
         const lastCard = cards[cards.length - 1];
-        if (!lastCard) throw new Error("Nenhum cartão selecionado.");
+        if (!lastCard) throw new Error("Nenhum cartão selecionado. Cadastre um cartão primeiro.");
         
         paymentData.creditCard = {
           holderName: lastCard.name,
@@ -165,11 +170,17 @@ const CheckoutPage: React.FC = () => {
       }
 
       const payment = await asaasService.createPayment(paymentData);
-      if (payment.errors) throw new Error(payment.errors[0].description);
+      if (!payment || payment.errors) {
+        const msg = payment?.errors?.[0]?.description || 'Erro desconhecido ao criar pagamento';
+        throw new Error(msg);
+      }
 
       // 3. Se for PIX, buscar QR Code
       if (method === 'pix') {
         const qrCode = await asaasService.getPixQrCode(payment.id);
+        if (!qrCode || qrCode.errors) {
+            throw new Error('Falha ao gerar QR Code PIX.');
+        }
         setPixData({ encodedImage: qrCode.encodedImage, payload: qrCode.payload });
       } else {
         // Sucesso no cartão
@@ -178,7 +189,12 @@ const CheckoutPage: React.FC = () => {
         setTimeout(() => navigate('/orders'), 2000);
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao processar pagamento no Asaas.');
+      console.error('[Checkout Debug] Erro capturado:', err);
+      let errorMsg = err.message || 'Erro ao processar pagamento.';
+      if (errorMsg === 'Failed to fetch') {
+        errorMsg = 'Erro de conexão com o Asaas (Possível erro de CORS). Tente novamente ou use outro navegador.';
+      }
+      setError(errorMsg);
     } finally {
       setIsProcessing(false);
     }

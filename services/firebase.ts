@@ -1,5 +1,7 @@
+
 // Modular Firebase SDK initialization
-import { initializeApp } from 'firebase/app';
+// Fix: Using namespace import as a workaround for the 'no exported member initializeApp' resolution error
+import * as firebase from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -12,7 +14,7 @@ const firebaseConfig = {
   measurementId: "G-E8BPMB4MHJ"
 };
 
-// Initialize Firebase app instance
-const app = initializeApp(firebaseConfig);
+// Fix: Initialize using the namespace to ensure the method is found
+const app = firebase.initializeApp(firebaseConfig);
 // Export Firestore database instance for use in AppContext
 export const db = getFirestore(app);
