@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Settings, Package, List, Save, Plus, Trash2, 
   LayoutPanelTop, ChevronRight, Image as ImageIcon, 
-  Clock, MapPin, PlusCircle, MinusCircle, CheckCircle, Info, LogOut, Edit3, X, CreditCard, Star, DollarSign, Receipt, Globe, CloudOff, CloudCheck
+  Clock, MapPin, PlusCircle, MinusCircle, CheckCircle, Info, LogOut, Edit3, X, CreditCard, Star, DollarSign, Receipt, Globe, CloudOff, CloudCheck,
+  Copy
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StoreConfig, Product, Category, ProductOption, OptionItem, CreditCard as CreditCardType } from '../types';
@@ -100,6 +101,16 @@ const AdminDashboard: React.FC = () => {
     if(confirm("Deseja realmente excluir este produto?")) {
       deleteProduct(id);
     }
+  };
+
+  const handleDuplicateProduct = (product: Product) => {
+    const newProduct = {
+      ...product,
+      id: Math.random().toString(36).substr(2, 9),
+      name: `${product.name} (Cópia)`
+    };
+    const newProducts = [...products, newProduct];
+    updateCampaignData(activeCampaignId, { products: newProducts });
   };
 
   const handleDeleteCard = (e: React.MouseEvent, id: string) => {
@@ -287,7 +298,7 @@ const AdminDashboard: React.FC = () => {
                    )}
                 </div>
 
-                {categories.sort((a,b) => a.order - b.order).map(cat => { const catProducts = products.filter(p => p.categoryId === cat.id); const isExpanded = expandedCategory === cat.id; return (<div key={cat.id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"><button onClick={() => setExpandedCategory(isExpanded ? null : cat.id)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"><div className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-black" /><h4 className="font-bold text-lg text-black">{cat.name}</h4><span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full font-bold">{catProducts.length} itens</span></div><ChevronRight className={`text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} size={20} /></button>{isExpanded && (<div className="p-8 pt-2 grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-50 bg-gray-50/30 animate-fade-in">{catProducts.length === 0 ? (<p className="col-span-full text-center py-10 text-gray-400 text-sm italic">Nenhum produto cadastrado nesta categoria.</p>) : (catProducts.map(p => (<div key={p.id} className="bg-white p-6 rounded-3xl border border-gray-100 flex items-center gap-6 group hover:shadow-xl transition-all"><img src={p.imageUrl} className="w-24 h-24 rounded-2xl object-cover shadow-sm bg-gray-100" alt="" /><div className="flex-1 min-w-0"><div className="flex justify-between items-start mb-1"><h4 className="font-bold text-lg text-black truncate">{p.name}</h4><span className="font-extrabold text-green-600 shrink-0">{formatCurrency(p.price)}</span></div><p className="text-xs text-gray-400 line-clamp-2 mb-4 font-medium">{p.description}</p><div className="flex gap-2"><button onClick={() => setEditingProduct(p)} className="px-5 py-2.5 bg-black text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-all">Editar</button><button onClick={() => removeProduct(p.id)} className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl ml-auto"><Trash2 size={18}/></button></div></div></div>)))}</div>)}</div>); })}
+                {categories.sort((a,b) => a.order - b.order).map(cat => { const catProducts = products.filter(p => p.categoryId === cat.id); const isExpanded = expandedCategory === cat.id; return (<div key={cat.id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"><button onClick={() => setExpandedCategory(isExpanded ? null : cat.id)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"><div className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-black" /><h4 className="font-bold text-lg text-black">{cat.name}</h4><span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full font-bold">{catProducts.length} itens</span></div><ChevronRight className={`text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} size={20} /></button>{isExpanded && (<div className="p-8 pt-2 grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-50 bg-gray-50/30 animate-fade-in">{catProducts.length === 0 ? (<p className="col-span-full text-center py-10 text-gray-400 text-sm italic">Nenhum produto cadastrado nesta categoria.</p>) : (catProducts.map(p => (<div key={p.id} className="bg-white p-6 rounded-3xl border border-gray-100 flex items-center gap-6 group hover:shadow-xl transition-all"><img src={p.imageUrl} className="w-24 h-24 rounded-2xl object-cover shadow-sm bg-gray-100" alt="" /><div className="flex-1 min-w-0"><div className="flex justify-between items-start mb-1"><h4 className="font-bold text-lg text-black truncate">{p.name}</h4><span className="font-extrabold text-green-600 shrink-0">{formatCurrency(p.price)}</span></div><p className="text-xs text-gray-400 line-clamp-2 mb-4 font-medium">{p.description}</p><div className="flex gap-2"><button onClick={() => setEditingProduct(p)} className="px-5 py-2.5 bg-black text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-all">Editar</button><button onClick={() => handleDuplicateProduct(p)} className="p-2.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl" title="Duplicar"><Copy size={18}/></button><button onClick={() => removeProduct(p.id)} className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl ml-auto"><Trash2 size={18}/></button></div></div></div>)))}</div>)}</div>); })}
               </div>
             )
           )}
