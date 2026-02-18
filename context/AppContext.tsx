@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 // Consolidated imports from 'firebase/firestore' to fix module export errors
 import { 
@@ -199,7 +198,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     if (persist) {
-      addDoc(collection(db, 'orders'), newOrder);
+      // Use setDoc instead of addDoc to respect the manually generated order ID
+      setDoc(doc(db, 'orders', newOrder.id), newOrder);
       clearCart();
     }
     return newOrder;

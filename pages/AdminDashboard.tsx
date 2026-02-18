@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Settings, Package, List, Save, Plus, Trash2, 
   LayoutPanelTop, ChevronRight, Image as ImageIcon, 
-  Clock, MapPin, PlusCircle, MinusCircle, CheckCircle, Info, LogOut, Edit3, X, CreditCard, Star, DollarSign, Receipt, Globe
+  Clock, MapPin, PlusCircle, MinusCircle, CheckCircle, Info, LogOut, Edit3, X, CreditCard, Star, DollarSign, Receipt, Globe, CloudOff, CloudCheck
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StoreConfig, Product, Category, ProductOption, OptionItem, CreditCard as CreditCardType } from '../types';
@@ -12,7 +12,7 @@ import { Modal } from '../components/Modals';
 
 const AdminDashboard: React.FC = () => {
   const { 
-    activeCampaignId, config, categories, products, allCampaignIds, cards, orders,
+    activeCampaignId, config, categories, products, allCampaignIds, cards, orders, isSynced,
     updateCampaignData, setActiveCampaign, addCampaign, formatCurrency 
   } = useApp();
   
@@ -119,13 +119,33 @@ const AdminDashboard: React.FC = () => {
             <NavItem active={activeTab === 'products'} onClick={() => setActiveTab('products')} icon={<Package size={20}/>} label="Produtos e Itens" />
           </div>
         </nav>
-        <div className="p-6 border-t space-y-3"><div className="bg-white border p-4 rounded-2xl"><p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Logado como</p><p className="text-sm font-bold truncate text-black">stuuck</p></div><button onClick={() => { localStorage.removeItem('admin_auth'); navigate('/'); }} className="w-full flex items-center justify-center gap-2 p-3 text-red-500 font-bold text-sm hover:bg-red-50 rounded-xl transition-all"><LogOut size={18} /> Sair do Painel</button></div>
+        <div className="p-6 border-t space-y-3">
+          <div className="bg-white border p-4 rounded-2xl flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Logado como</p>
+              <p className="text-sm font-bold truncate text-black">stuuck</p>
+            </div>
+            {/* Indicador de Sync no Menu */}
+            <div className={`w-3 h-3 rounded-full ${isSynced ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse' : 'bg-red-500 animate-bounce'}`} title={isSynced ? "Sincronizado" : "Desconectado"} />
+          </div>
+          <button onClick={() => { localStorage.removeItem('admin_auth'); navigate('/'); }} className="w-full flex items-center justify-center gap-2 p-3 text-red-500 font-bold text-sm hover:bg-red-50 rounded-xl transition-all"><LogOut size={18} /> Sair do Painel</button>
+        </div>
       </aside>
 
       <main className="flex-1 ml-72 p-12 bg-gray-50 min-h-screen">
         <div className="max-w-5xl mx-auto animate-fade-in">
           <header className="flex justify-between items-center mb-12">
-            <div><p className="text-gray-500 font-medium mb-1">Gerenciando: <span className="text-black font-bold">#{activeCampaignId} - {config.name}</span></p><h2 className="text-3xl font-extrabold tracking-tight text-black">{activeTab === 'campaigns' && "Minhas Lojas (Campanhas)"}{activeTab === 'config' && "Branding e Configurações"}{activeTab === 'categories' && "Categorias do Cardápio"}{activeTab === 'products' && "Produtos e Complementos"}</h2></div>
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <p className="text-gray-500 font-medium">Gerenciando: <span className="text-black font-bold">#{activeCampaignId} - {config.name}</span></p>
+                {/* Indicador de Sincronização Principal */}
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${isSynced ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 animate-pulse'}`}>
+                  {isSynced ? <CloudCheck size={14}/> : <CloudOff size={14}/>}
+                  {isSynced ? "Banco de Dados Online" : "Banco de Dados Offline"}
+                </div>
+              </div>
+              <h2 className="text-3xl font-extrabold tracking-tight text-black">{activeTab === 'campaigns' && "Minhas Lojas (Campanhas)"}{activeTab === 'config' && "Branding e Configurações"}{activeTab === 'categories' && "Categorias do Cardápio"}{activeTab === 'products' && "Produtos e Complementos"}</h2>
+            </div>
             {activeTab === 'campaigns' && (<button onClick={handleCreateCampaign} className="bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-xl hover:scale-105 transition-all"><Plus size={20} /> Criar Nova Loja</button>)}
             {activeTab === 'products' && !editingProduct && (<button onClick={() => setEditingProduct({ id: '', categoryId: categories[0]?.id || '', name: '', description: '', price: 0, imageUrl: '', options: [] })} className="bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-xl hover:scale-105 transition-all"><Plus size={20} /> Novo Produto</button>)}
           </header>
@@ -136,6 +156,16 @@ const AdminDashboard: React.FC = () => {
 
           {activeTab === 'config' && (
             <div className="space-y-10 pb-20">
+              {!isSynced && (
+                <div className="bg-red-50 border-2 border-red-200 p-6 rounded-3xl flex items-center gap-4 text-red-700 animate-pulse">
+                  <CloudOff size={32} />
+                  <div>
+                    <h4 className="font-bold text-lg">Atenção: Você está Offline</h4>
+                    <p className="text-sm opacity-90">As alterações feitas agora podem não ser salvas permanentemente até que a conexão seja restabelecida ou o Firestore seja ativado no Console Firebase.</p>
+                  </div>
+                </div>
+              )}
+              
               <div className="bg-white rounded-3xl p-10 shadow-sm border border-gray-100">
                 <form onSubmit={handleSaveConfig} className="grid grid-cols-1 md:grid-cols-2 gap-10">
                   <div className="space-y-6">

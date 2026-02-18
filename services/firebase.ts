@@ -1,4 +1,3 @@
-// Fix: Use standard modular import for initializeApp from 'firebase/app'
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
@@ -12,6 +11,6 @@ const firebaseConfig = {
   measurementId: "G-E8BPMB4MHJ"
 };
 
-// Initialize Firebase with the modular SDK to resolve 'no exported member' errors
+// Initialize Firebase with the modular SDK
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
