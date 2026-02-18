@@ -43,15 +43,6 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
 
   return (
     <div className="min-h-screen max-w-md mx-auto bg-white shadow-lg relative overflow-x-hidden flex flex-col">
-      {/* Botão Admin Sandbox */}
-      <button 
-        onClick={() => navigate('/login')}
-        className="fixed bottom-32 right-4 z-[99] bg-gray-800 text-white/50 p-2.5 rounded-full shadow-lg hover:text-white transition-colors"
-        title="Admin"
-      >
-        <ShieldCheck size={18} />
-      </button>
-
       {title && (
         <header className="sticky top-0 z-[55] bg-white border-b px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
