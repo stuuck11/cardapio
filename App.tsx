@@ -1,7 +1,7 @@
 
 import React from 'react';
-/* Updated react-router-dom imports for v6 compatibility */
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+/* Reverted to BrowserRouter as requested to remove the hash from URL */
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import HomePage from './pages/HomePage';
 import CheckoutPage from './pages/CheckoutPage';
