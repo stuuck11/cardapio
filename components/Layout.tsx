@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, User, ChevronLeft, X, CreditCard, LogOut, ShieldCheck, ShoppingBag, ChevronRight } from 'lucide-react';
+import { Home, ClipboardList, User, ChevronLeft, X, CreditCard, LogOut, ShieldCheck, ShoppingBag, ChevronRight, CloudOff, CloudCheck } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CardRegistrationModal, Modal } from './Modals';
 
@@ -14,7 +14,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, activeCampaignId, cart, formatCurrency, config, clearCart, removeFromCart } = useApp();
+  const { user, activeCampaignId, cart, formatCurrency, config, clearCart, removeFromCart, isSynced } = useApp();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -51,13 +51,23 @@ const Layout: React.FC<LayoutProps> = ({ children, title, showBack }) => {
       </button>
 
       {title && (
-        <header className="sticky top-0 z-[55] bg-white border-b px-4 py-3 flex items-center gap-3">
-          {showBack && (
-            <button onClick={() => navigate(-1)} className="p-1 text-black">
-              <ChevronLeft size={20} />
-            </button>
-          )}
-          <h1 className="font-bold text-[12px] text-black uppercase tracking-tight">{title}</h1>
+        <header className="sticky top-0 z-[55] bg-white border-b px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {showBack && (
+              <button onClick={() => navigate(-1)} className="p-1 text-black">
+                <ChevronLeft size={20} />
+              </button>
+            )}
+            <h1 className="font-bold text-[12px] text-black uppercase tracking-tight">{title}</h1>
+          </div>
+          
+          {/* Indicador de Sincronização */}
+          <div className="flex items-center gap-1.5" title={isSynced ? "Sincronizado com servidor" : "Modo Offline"}>
+            <div className={`w-1.5 h-1.5 rounded-full ${isSynced ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+              {isSynced ? "On" : "Off"}
+            </span>
+          </div>
         </header>
       )}
 
