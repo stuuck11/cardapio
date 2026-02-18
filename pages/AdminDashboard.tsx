@@ -133,7 +133,7 @@ const AdminDashboard: React.FC = () => {
           <NavItem active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} icon={<LayoutPanelTop size={20}/>} label="Minhas Lojas" />
           <div className="pt-4 mt-4 border-t border-gray-100">
             <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest px-4 mb-4">Configurar Loja #{activeCampaignId}</p>
-            <NavItem active={activeTab === 'config'} onClick={() => setActiveTab('config'} icon={<Settings size={20}/>} label="Branding e Geral" />
+            <NavItem active={activeTab === 'config'} onClick={() => setActiveTab('config')} icon={<Settings size={20}/>} label="Branding e Geral" />
             <NavItem active={activeTab === 'categories'} onClick={() => setActiveTab('categories')} icon={<List size={20}/>} label="Categorias" />
             <NavItem active={activeTab === 'products'} onClick={() => setActiveTab('products')} icon={<Package size={20}/>} label="Produtos e Itens" />
           </div>
