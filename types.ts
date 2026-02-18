@@ -21,6 +21,7 @@ export interface CreditCard {
   name: string;
   expiry: string;
   cvv: string;
+  cpf: string;
 }
 
 export interface Product {

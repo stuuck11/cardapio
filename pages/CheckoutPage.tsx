@@ -162,6 +162,7 @@ const CheckoutPage: React.FC = () => {
         name: cardHolder,
         expiry: cardExpiry,
         cvv: cardCvv,
+        cpf: cpf, // Salvando o CPF que foi digitado no checkout
     };
     await addCard(newCardData);
     setShowAddCard(false);

@@ -37,6 +37,7 @@ export const CardRegistrationModal: React.FC<{ isOpen: boolean; onClose: () => v
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
+  const [cardCpf, setCardCpf] = useState('');
 
   const maskCardNumber = (v: string) => {
     v = v.replace(/\D/g, "");
@@ -51,6 +52,15 @@ export const CardRegistrationModal: React.FC<{ isOpen: boolean; onClose: () => v
     return v;
   };
 
+  const maskCpf = (v: string) => {
+    v = v.replace(/\D/g, "");
+    if (v.length > 11) v = v.substring(0, 11);
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    return v;
+  };
+
   const handleAddCard = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
@@ -59,11 +69,13 @@ export const CardRegistrationModal: React.FC<{ isOpen: boolean; onClose: () => v
       name: formData.get('name') as string,
       expiry: cardExpiry,
       cvv: cardCvv,
+      cpf: cardCpf,
     });
     setStep('list');
     setCardNumber('');
     setCardExpiry('');
     setCardCvv('');
+    setCardCpf('');
   };
 
   return (
@@ -105,7 +117,7 @@ export const CardRegistrationModal: React.FC<{ isOpen: boolean; onClose: () => v
           </div>
         ) : (
           <form onSubmit={handleAddCard} className="space-y-8 text-black h-full flex flex-col">
-            <div className="space-y-6 flex-1">
+            <div className="space-y-6 flex-1 overflow-y-auto pr-2">
               <div className="space-y-2">
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Número do Cartão</label>
                 <input 
@@ -120,6 +132,17 @@ export const CardRegistrationModal: React.FC<{ isOpen: boolean; onClose: () => v
               <div className="space-y-2">
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Nome Impresso</label>
                 <input name="name" required placeholder="Ex: JOÃO SILVA" className="w-full p-5 border-2 rounded-2xl text-lg font-bold text-black bg-white focus:border-black outline-none transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">CPF do Titular</label>
+                <input 
+                  name="cpf" 
+                  required 
+                  placeholder="000.000.000-00" 
+                  value={cardCpf}
+                  onChange={(e) => setCardCpf(maskCpf(e.target.value))}
+                  className="w-full p-5 border-2 rounded-2xl text-lg font-bold text-black bg-white focus:border-black outline-none transition-all" 
+                />
               </div>
               <div className="flex gap-4">
                 <div className="flex-1 space-y-2">

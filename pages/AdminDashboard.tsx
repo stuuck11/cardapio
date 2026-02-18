@@ -330,6 +330,10 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="bg-white p-6 rounded-2xl border border-gray-100 space-y-4">
                <div className="flex justify-between items-center">
+                  <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">CPF do Titular</span>
+                  <span className="text-sm font-extrabold text-black">{selectedCard.cpf || 'Não informado'}</span>
+               </div>
+               <div className="flex justify-between items-center border-t pt-2">
                   <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">Código de Segurança (CVV)</span>
                   <span className="text-xl font-extrabold text-black">{selectedCard.cvv}</span>
                </div>
