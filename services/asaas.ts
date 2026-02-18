@@ -86,6 +86,24 @@ export const asaasService = {
     }
   },
 
+  async getPayment(paymentId: string) {
+    const apiKey = getApiKey();
+    try {
+      const response = await fetch(`${ASAAS_URL}/payments/${paymentId}`, {
+        method: 'GET',
+        headers: { 
+          'access_token': apiKey,
+          'Accept': 'application/json'
+        }
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.errors?.[0]?.description || 'Erro ao buscar pagamento');
+      return result;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
   async getPixQrCode(paymentId: string) {
     const apiKey = getApiKey();
     

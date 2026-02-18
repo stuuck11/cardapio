@@ -32,6 +32,9 @@ const CheckoutPage: React.FC = () => {
   const [cardCvv, setCardCvv] = useState('');
   const [cardHolder, setCardHolder] = useState('');
 
+  const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
+  const hasTrackedPurchase = useRef(false);
+
   const nameInputRef = useRef<HTMLInputElement>(null);
   const cpfInputRef = useRef<HTMLInputElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -59,6 +62,40 @@ const CheckoutPage: React.FC = () => {
       });
     }
   }, [config.metaPixelId]);
+
+  // Polling para verificar se o pagamento foi recebido/confirmado
+  useEffect(() => {
+    let interval: any;
+    if (currentPaymentId && !showSuccess) {
+      interval = setInterval(async () => {
+        try {
+          const payment = await asaasService.getPayment(currentPaymentId);
+          const isPaid = payment.status === 'RECEIVED' || payment.status === 'CONFIRMED';
+          
+          if (isPaid && !hasTrackedPurchase.current) {
+            hasTrackedPurchase.current = true;
+            if (config.metaPixelId) {
+              await metaService.trackEvent('Purchase', {
+                pixelId: config.metaPixelId,
+                accessToken: config.metaCapiToken || '',
+                amount: currentTotal,
+                contentName: `Pedido ${currentPaymentId} - ${config.name}`,
+                originUrl: window.location.href,
+                email: `${tempPhone.replace(/\D/g, '')}@japabox.com.br`,
+                phone: tempPhone
+              });
+            }
+            setShowSuccess(true);
+            setTimeout(() => navigate('/orders'), 2000);
+            clearInterval(interval);
+          }
+        } catch (e) {
+          console.error("Polling error:", e);
+        }
+      }, 5000); // Verifica a cada 5 segundos
+    }
+    return () => clearInterval(interval);
+  }, [currentPaymentId, showSuccess, config.metaPixelId, currentTotal, navigate, tempPhone, config.name, config.metaCapiToken]);
 
   const maskCpf = (v: string) => {
     v = v.replace(/\D/g, "");
@@ -173,29 +210,37 @@ const CheckoutPage: React.FC = () => {
       }
 
       const payment = await asaasService.createPayment(paymentData);
+      setCurrentPaymentId(payment.id);
 
-      // Dispara Purchase se o pagamento for bem sucedido (ou PIX gerado conforme lógica de checkout)
-      if (config.metaPixelId) {
-        metaService.trackEvent('Purchase', {
-          pixelId: config.metaPixelId,
-          accessToken: config.metaCapiToken || '',
-          amount: currentTotal,
-          contentName: `Pedido ${payment.id} - ${config.name}`,
-          originUrl: window.location.href,
-          email: `${tempPhone.replace(/\D/g, '')}@japabox.com.br`,
-          phone: tempPhone
-        });
-      }
-
-      if (method === 'pix') {
+      // No caso de Cartão, verifica se já está aprovado imediatamente
+      const isPaidImmediately = payment.status === 'RECEIVED' || payment.status === 'CONFIRMED';
+      
+      if (isPaidImmediately && !hasTrackedPurchase.current) {
+        hasTrackedPurchase.current = true;
+        if (config.metaPixelId) {
+          metaService.trackEvent('Purchase', {
+            pixelId: config.metaPixelId,
+            accessToken: config.metaCapiToken || '',
+            amount: currentTotal,
+            contentName: `Pedido ${payment.id} - ${config.name}`,
+            originUrl: window.location.href,
+            email: `${tempPhone.replace(/\D/g, '')}@japabox.com.br`,
+            phone: tempPhone
+          });
+        }
+        createOrder(method, true);
+        setShowSuccess(true);
+        setTimeout(() => navigate('/orders'), 2000);
+      } else if (method === 'pix') {
         const qrCode = await asaasService.getPixQrCode(payment.id);
         setPixData({ encodedImage: qrCode.encodedImage, payload: qrCode.payload });
         createOrder(method, true);
         setIsProcessing(false);
       } else {
+        // Se for cartão mas não aprovado imediatamente (ex: em análise), ainda processa a ordem
         createOrder(method, true);
-        setShowSuccess(true);
-        setTimeout(() => navigate('/orders'), 2000);
+        setIsProcessing(false);
+        // Polling iniciado pelo useEffect cuidará do Purchase se virar CONFIRMED
       }
     } catch (err: any) {
       console.error('[Checkout Debug] Erro:', err);
