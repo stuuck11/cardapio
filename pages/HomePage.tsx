@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext';
 import Layout from '../components/Layout';
 import { DeliveryModal, ProductDetailModal, Modal } from '../components/Modals';
 import { Product } from '../types';
+import { metaService } from '../services/meta';
 
 const HomePage: React.FC = () => {
   const { campaignId: paramId } = useParams<{ campaignId: string }>();
@@ -25,15 +26,17 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     setActiveCampaign(campaignId);
     
-    // Inicia Pixel se ID existir
-    if (config.metaPixelId && !(window as any).fbq) {
-      const n: any = (window as any).fbq = function() { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
-      if (!(window as any)._fbq) (window as any)._fbq = n;
-      n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
-      const t = document.createElement('script'); t.async = !0; t.src = 'https://connect.facebook.net/en_US/fbevents.js';
-      const s = document.getElementsByTagName('script')[0]; s.parentNode?.insertBefore(t, s);
-      n('init', config.metaPixelId);
-      n('track', 'PageView');
+    // Inicia Pixel se ID existir através do serviço centralizado
+    if (config.metaPixelId) {
+      metaService.init(config.metaPixelId);
+      metaService.trackEvent('PageView', {
+        pixelId: config.metaPixelId,
+        accessToken: config.metaCapiToken || '',
+        originUrl: window.location.href,
+        contentName: config.name,
+        email: user?.phone ? `${user.phone.replace(/\D/g, '')}@japabox.com.br` : undefined,
+        phone: user?.phone
+      });
     }
   }, [campaignId, setActiveCampaign, location.search, user, config.metaPixelId]);
 

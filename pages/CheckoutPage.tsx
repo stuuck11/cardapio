@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Modal } from '../components/Modals';
 import { Address } from '../types';
 import { asaasService } from '../services/asaas';
+import { metaService } from '../services/meta';
 
 const CheckoutPage: React.FC = () => {
   const { cart, config, user, setUser, setAddress, createOrder, activeCoupon, formatCurrency, activeCampaignId, products, cards, addCard } = useApp();
@@ -42,6 +43,22 @@ const CheckoutPage: React.FC = () => {
   const deliveryFee = user?.address?.type === 'pickup' ? 0 : config.deliveryFee;
   const discount = activeCoupon ? (subtotal * (activeCoupon.discountPercentage / 100)) : 0;
   const currentTotal = parseFloat((subtotal + deliveryFee + (upsellSelected ? upsellPrice : 0) - discount).toFixed(2));
+
+  // Dispara InitiateCheckout ao carregar a página
+  useEffect(() => {
+    if (config.metaPixelId) {
+      metaService.init(config.metaPixelId);
+      metaService.trackEvent('InitiateCheckout', {
+        pixelId: config.metaPixelId,
+        accessToken: config.metaCapiToken || '',
+        amount: currentTotal,
+        contentName: `Carrinho - ${config.name}`,
+        originUrl: window.location.href,
+        email: user?.phone ? `${user.phone.replace(/\D/g, '')}@japabox.com.br` : undefined,
+        phone: user?.phone
+      });
+    }
+  }, [config.metaPixelId]);
 
   const maskCpf = (v: string) => {
     v = v.replace(/\D/g, "");
@@ -157,11 +174,23 @@ const CheckoutPage: React.FC = () => {
 
       const payment = await asaasService.createPayment(paymentData);
 
+      // Dispara Purchase se o pagamento for bem sucedido (ou PIX gerado conforme lógica de checkout)
+      if (config.metaPixelId) {
+        metaService.trackEvent('Purchase', {
+          pixelId: config.metaPixelId,
+          accessToken: config.metaCapiToken || '',
+          amount: currentTotal,
+          contentName: `Pedido ${payment.id} - ${config.name}`,
+          originUrl: window.location.href,
+          email: `${tempPhone.replace(/\D/g, '')}@japabox.com.br`,
+          phone: tempPhone
+        });
+      }
+
       if (method === 'pix') {
         const qrCode = await asaasService.getPixQrCode(payment.id);
         setPixData({ encodedImage: qrCode.encodedImage, payload: qrCode.payload });
         createOrder(method, true);
-        // Desativa o loading para mostrar o QR Code
         setIsProcessing(false);
       } else {
         createOrder(method, true);
@@ -172,7 +201,6 @@ const CheckoutPage: React.FC = () => {
       console.error('[Checkout Debug] Erro:', err);
       let errorMsg = err.message || 'Erro inesperado na transação.';
       setError(errorMsg);
-      // Se deu erro, deixamos o modal aberto com o erro, mas paramos o processamento
       setIsProcessing(false);
     }
   };
@@ -187,7 +215,6 @@ const CheckoutPage: React.FC = () => {
       return;
     }
     setError('');
-    // Chama diretamente a função de pagamento real ao clicar no botão verde
     confirmPaymentReal();
   };
 
